@@ -29,6 +29,9 @@ jobs:
       - name: Build standalone (GitHub Pages) version
         run: npm run build:static
 
+      - name: Check links and assets in static build
+        run: npm run check:links
+
       - name: Smoke test API
         run: |
           npm start &
@@ -45,3 +48,12 @@ jobs:
           name: podrabotka-msk-static
           path: docs
           retention-days: 14
+
+      - name: Upload downloadable files
+        uses: actions/upload-artifact@v4
+        with:
+          name: podrabotka-msk-downloads
+          path: |
+            docs/downloads/*.zip
+            presentation/podrabotka-msk-deck.pdf
+          retention-days: 30
