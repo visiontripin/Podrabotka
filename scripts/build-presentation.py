@@ -265,8 +265,8 @@ SPEAKER_SLIDES = [
             ("screenshots/06-admin-moderation.png", "Модерация"),
         ],
         "facts": [
-            ("Демо", f"{SITE}/app.html"),
-            ("Android ZIP", "/downloads/podrabotka-msk-android-preview.zip"),
+            ("Демо", f"{SITE}/app.html"),  # абсолютная ссылка: работает из любого места
+            ("Android ZIP", f"{SITE}/downloads/podrabotka-msk-android-preview.zip"),
             ("Код", REPO),
             ("Локально", "npm install && npm run dev → localhost:3000"),
         ],
