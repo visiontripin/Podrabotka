@@ -48,8 +48,8 @@
 |---|---|
 | **Демо-страница продукта** (описание, скриншоты, презентация, все ссылки) | <https://visiontripin.github.io/Podrabotka/> |
 | **Интерактивное приложение** (без сервера, данные в браузере) | <https://visiontripin.github.io/Podrabotka/app.html> |
-| **Презентация в браузере** (13 слайдов, листается стрелками) | <https://visiontripin.github.io/Podrabotka/presentation/> |
-| **Презентация PDF** | [`presentation/podrabotka-msk-deck.pdf`](presentation/podrabotka-msk-deck.pdf) |
+| **Презентация в браузере** (13 слайдов, листается стрелками) | <https://visiontripin.github.io/Podrabotka/docs/presentation/> |
+| **Презентация PDF** | <https://visiontripin.github.io/Podrabotka/docs/presentation/podrabotka-msk-deck.pdf> |
 | **Android-архив** (офлайн, открывается без интернета) | [`docs/downloads/podrabotka-msk-android-preview.zip`](docs/downloads/podrabotka-msk-android-preview.zip) |
 | **Офлайн-сайт архивом** (страница + приложение + презентация) | [`docs/downloads/podrabotka-msk-offline-site.zip`](docs/downloads/podrabotka-msk-offline-site.zip) |
 | **Исходники одним архивом** | <https://github.com/visiontripin/Podrabotka/archive/refs/heads/main.zip> |
