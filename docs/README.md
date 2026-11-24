@@ -48,8 +48,8 @@
 |---|---|
 | **Демо-страница продукта** (описание, скриншоты, презентация, все ссылки) | <https://visiontripin.github.io/Podrabotka/> |
 | **Интерактивное приложение** (без сервера, данные в браузере) | <https://visiontripin.github.io/Podrabotka/app.html> |
-| **Презентация в браузере** (13 слайдов, листается стрелками) | <https://visiontripin.github.io/Podrabotka/presentation/> |
-| **Презентация PDF** | [`presentation/podrabotka-msk-deck.pdf`](presentation/podrabotka-msk-deck.pdf) |
+| **Презентация в браузере** (13 слайдов, листается стрелками) | <https://visiontripin.github.io/Podrabotka/docs/presentation/> |
+| **Презентация PDF** | <https://visiontripin.github.io/Podrabotka/docs/presentation/podrabotka-msk-deck.pdf> |
 | **Android-архив** (офлайн, открывается без интернета) | [`docs/downloads/podrabotka-msk-android-preview.zip`](docs/downloads/podrabotka-msk-android-preview.zip) |
 | **Офлайн-сайт архивом** (страница + приложение + презентация) | [`docs/downloads/podrabotka-msk-offline-site.zip`](docs/downloads/podrabotka-msk-offline-site.zip) |
 | **Исходники одним архивом** | <https://github.com/visiontripin/Podrabotka/archive/refs/heads/main.zip> |
@@ -216,8 +216,12 @@ npm run build:presentation
 
 | Вариант | Настройка | Как обновляется |
 |---|---|---|
-| Branch (по умолчанию) | Settings → Pages → *Deploy from a branch* → `main` / **`/docs`** | автоматически при коммите в `main` |
+| Branch (сейчас включён) | Settings → Pages → *Deploy from a branch* → `main` / **`/docs`** | автоматически при коммите в `main` |
 | Actions | Settings → Pages → *Source: GitHub Actions* | workflow [`deploy-pages.yml`](.github/workflows/deploy-pages.yml) |
+
+`deploy-pages.yml` сам определяет режим: если Pages отдаётся из ветки, workflow
+собирает и проверяет `docs/`, но публикацию пропускает (иначе два деплоя
+конфликтуют и шаг падает).
 
 > Важно: если выбрать `/docs`, корневой `index.html` (Vite-шелл) больше не отдаётся
 > как сайт — браузер получает готовую демо-страницу из `docs/index.html`.
