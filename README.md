@@ -273,6 +273,32 @@ curl -s localhost:3000/api/health
 | `PATCH` | `/api/admin/regions/:id` | Включить регион масштабирования |
 | `GET` | `/api/health` | Healthcheck для деплоя |
 
+## Telegram-бот и Bot-Control
+
+Два бота в `bot/`:
+
+| Бот | Файл | Данные |
+|---|---|---|
+| Полнофункциональный | `bot/podrabotka_bot.py` | Общая SQLite веб-версии: отклики, статусы, чаты синхронизированы в обе стороны |
+| Имитационный (демо) | `bot/imitation_bot.txt` | Только демо-данные в тексте, база не нужна |
+
+Демо-бота импортируют в приложение [Bot-Control](https://github.com/visiontripin/Bot-Control)
+через **Скрипты → Импорт настроек из кода**: вставить `bot/imitation_bot.txt` →
+**🔍 Разобрать** → **✅ Применить к боту**.
+
+Импортёр Bot-Control разбирает конфиг **статически** и не исполняет код, поэтому
+конфиг написан так, чтобы всё было видно в тексте: литеральные `callback_data`
+(никакой конкатенации), отдельная функция с точным `call.data == "..."` на каждую
+inline-кнопку, меню без аргументов с явной привязкой `reply_markup=`, тексты
+ответов строками. Подробный разбор — **[`bot/BOT-CONTROL-IMPORT.md`](bot/BOT-CONTROL-IMPORT.md)**.
+
+```
+✅ 11/11 reply-кнопок      → своё правило m.text == "..."
+✅ 18/18 callback_data     → своя функция, точное сравнение
+✅ 5/5  inline-меню        → прикреплены, без аргументов
+✅  0 замечаний импортёра
+```
+
 ## Структура репозитория
 
 ```
@@ -288,6 +314,11 @@ curl -s localhost:3000/api/health
 │   ├── assets/fonts/     # Manrope + Unbounded (OFL), локально
 │   └── styles/fonts.css
 ├── server/               # Express API, схема и сиды SQLite
+├── bot/                  # Telegram-боты
+│   ├── podrabotka/             # полнофункциональный бот на общей SQLite
+│   ├── imitation_bot.txt       # демо-бот для импорта в Bot-Control
+│   ├── imitation_bot.py        # он же для запуска вручную
+│   └── BOT-CONTROL-IMPORT.md   # разбор замечаний импортёра, карта кнопок
 ├── scripts/
 │   ├── build-static.mjs        # автономная сборка для GitHub Pages
 │   ├── build-presentation.py   # презентация: PDF + HTML из одного источника
