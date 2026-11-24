@@ -1176,16 +1176,23 @@ async function startServer() {
         allowedHosts: true,
         hmr: { server: httpServer },
       },
-      appType: 'spa',
+      // корневой index.html — демо-страница, приложение живёт в /app.html
+      appType: 'mpa',
     });
     app.use(vite.middlewares);
   } else {
     const distPath = path.resolve(process.cwd(), 'dist');
+    // готовая статическая сборка (демо-страница + приложение + файлы для скачивания)
+    const staticDir = path.resolve(process.cwd(), 'docs');
+    if (fs.existsSync(staticDir)) app.use('/docs', express.static(staticDir));
+
+    // демо-страница (index.html) и приложение (app.html) — оба из dist/
     app.use(express.static(distPath));
-    app.get('*', (_req, res) => {
-      const indexFile = path.join(distPath, 'index.html');
-      if (fs.existsSync(indexFile)) {
-        res.sendFile(indexFile);
+    app.get('*', (req, res) => {
+      const requested = req.path.endsWith('.html') ? req.path : 'app.html';
+      const target = path.join(distPath, requested);
+      if (fs.existsSync(target)) {
+        res.sendFile(target);
       } else {
         res.status(404).send('Build not found');
       }

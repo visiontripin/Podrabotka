@@ -2,7 +2,7 @@
   "name": "podrabotka-msk",
   "private": true,
   "version": "1.0.0",
-  "description": "Подработка.МСК — платформа быстрых смен в Москве и Московской области",
+  "description": "Подработка.МСК — платформа быстрых смен в Москве и Московской области: демо, презентация, full-stack MVP",
   "type": "module",
   "engines": {
     "node": ">=20"
@@ -13,7 +13,9 @@
     "start": "NODE_ENV=production NODE_NO_WARNINGS=1 tsx server/index.ts",
     "typecheck": "tsc --noEmit",
     "build:static": "node scripts/build-static.mjs",
-    "verify": "npm run typecheck && npm run build && npm run build:static"
+    "build:presentation": "python3 scripts/build-presentation.py",
+    "check:links": "node scripts/check-links.mjs",
+    "verify": "npm run typecheck && npm run build && npm run build:static && npm run check:links"
   },
   "dependencies": {
     "express": "^4.21.2",

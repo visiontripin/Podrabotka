@@ -4,6 +4,7 @@ node_modules/
 # builds
 dist/
 .static-build/
+.cache-presentation/
 *.log
 
 # локальная БД и данные разработчика
@@ -21,3 +22,7 @@ data/*.sqlite-wal
 Thumbs.db
 .idea/
 .vscode/
+
+# python
+__pycache__/
+*.pyc

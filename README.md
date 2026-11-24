@@ -6,18 +6,18 @@
 
 <p align="center">
   Платформа быстрых смен в Москве и Московской области.<br/>
-  Работодатель публикует смену за минуту, исполнитель откликается в один клик и получает деньги сразу после смены — без комиссии с заработка.
+  Работодатель публикует смену за минуту, исполнитель откликается в один клик
+  и получает деньги сразу после смены — без комиссии с заработка.
 </p>
 
 <p align="center">
-  <a href="https://visiontripin.github.io/eco/"><b>▶ Открыть демо</b></a> ·
-  <a href="#быстрый-старт">Быстрый старт</a> ·
-  <a href="#как-это-устроено">Архитектура</a> ·
-  <a href="#api">API</a>
+  <a href="https://visiontripin.github.io/Podrabotka/"><b>▶ Демо-страница</b></a> ·
+  <a href="https://visiontripin.github.io/Podrabotka/app.html"><b>▶ Интерактивное приложение</b></a> ·
+  <a href="https://visiontripin.github.io/Podrabotka/presentation/"><b>▶ Презентация</b></a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/visiontripin/eco/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/visiontripin/eco/actions/workflows/ci.yml/badge.svg" /></a>
+  <a href="https://github.com/visiontripin/Podrabotka/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/visiontripin/Podrabotka/actions/workflows/ci.yml/badge.svg" /></a>
   <img alt="Node" src="https://img.shields.io/badge/node-%E2%89%A520-3c873a" />
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-strict-3178c6" />
   <img alt="License" src="https://img.shields.io/badge/license-MIT-111115" />
@@ -41,6 +41,26 @@
 
 Демо-версия уже наполнена реалистичными данными: 12 смен, 7 пользователей, 4 тарифа,
 станции метро и МЦД, отзывы на модерации.
+
+## Демо и ссылки
+
+| Что | Ссылка |
+|---|---|
+| **Демо-страница продукта** (описание, скриншоты, презентация, все ссылки) | <https://visiontripin.github.io/Podrabotka/> |
+| **Интерактивное приложение** (без сервера, данные в браузере) | <https://visiontripin.github.io/Podrabotka/app.html> |
+| **Презентация в браузере** (12 слайдов, листается стрелками) | <https://visiontripin.github.io/Podrabotka/presentation/> |
+| **Презентация PDF** | [`presentation/podrabotka-msk-deck.pdf`](presentation/podrabotka-msk-deck.pdf) |
+| **Android-архив** (офлайн, открывается без интернета) | [`docs/downloads/podrabotka-msk-android-preview.zip`](docs/downloads/podrabotka-msk-android-preview.zip) |
+| **Офлайн-сайт архивом** (страница + приложение + презентация) | [`docs/downloads/podrabotka-msk-offline-site.zip`](docs/downloads/podrabotka-msk-offline-site.zip) |
+| **Исходники одним архивом** | <https://github.com/visiontripin/Podrabotka/archive/refs/heads/main.zip> |
+| **Релизы с файлами** | <https://github.com/visiontripin/Podrabotka/releases/latest> |
+
+В репозитории два входа:
+
+- **`index.html`** — демо-страница продукта: возможности, скриншоты, архитектура,
+  презентация и ссылки на скачивание. Из неё открывается приложение.
+- **`app.html`** — точка входа самого React-приложения (dev-сервер и Vite-сборка).
+  На GitHub Pages работающая версия лежит в `docs/app.html`.
 
 ## Скриншоты
 
@@ -121,22 +141,30 @@ regions ── locations      (ISO-коды, валюта, таймзона, л�
 ## Быстрый старт
 
 ```bash
-git clone https://github.com/visiontripin/eco.git
-cd eco
+git clone https://github.com/visiontripin/Podrabotka.git
+cd Podrabotka
 npm install
 npm run dev
 ```
 
-Приложение и API — на одном порту: **http://localhost:3000**.
-База создаётся автоматически в `data/podrabotka.sqlite` и наполняется демо-данными.
+| Адрес | Что открывается |
+|---|---|
+| **http://localhost:3000** | Демо-страница продукта (`index.html`) |
+| <http://localhost:3000/docs/index.html> | Та же страница в сборке для GitHub Pages |
+| <http://localhost:3000/docs/app.html> | Приложение в автономном режиме |
+
+Приложение и API работают на одном порту. База создаётся автоматически
+в `data/podrabotka.sqlite` и наполняется демо-данными.
 
 | Команда | Что делает |
 |---|---|
 | `npm run dev` | Full-stack в режиме разработки (Express + Vite HMR) |
 | `npm run build` | Проверка типов + production-сборка фронтенда в `dist/` |
 | `npm start` | Production-сервер: API + раздача `dist/` на `PORT` (по умолчанию 3000) |
-| `npm run build:static` | Автономная версия в `docs/` (GitHub Pages) + Android-архив |
-| `npm run verify` | Всё сразу: типы, сборка, статическая сборка |
+| `npm run build:static` | Автономная сборка в `docs/`: демо-страница, приложение, Android-архив, презентация |
+| `npm run build:presentation` | Пересобрать презентацию (PDF + HTML) из `scripts/build-presentation.py` |
+| `npm run check:links` | Проверить локальные ссылки и ассеты в `docs/` |
+| `npm run verify` | Всё сразу: типы, сборка, статическая сборка, проверка ссылок |
 
 Переменные окружения — см. [`.env.example`](.env.example) (`PORT`, `NODE_ENV`, `DATA_DIR`, `DB_PATH`).
 
@@ -151,21 +179,48 @@ npm run dev
 | 2 | Илья Громов | Работодатель | Воронка кандидатов, публикация смены |
 | 7 | Алексей Морозов | Модератор | Очередь отзывов, тарифы, регионы |
 
-## Запуск и деплой
+## Презентация
+
+12 слайдов о продукте: проблема, решение, аудитория, путь исполнителя и работодателя,
+доверие и модерация, тарифы, метрики, архитектура, демо, дорожная карта, ограничения.
+
+- PDF — [`presentation/podrabotka-msk-deck.pdf`](presentation/podrabotka-msk-deck.pdf) (16:9, кириллица встроена);
+- HTML — [`presentation/index.html`](presentation/index.html) (стрелки ← →, печать в PDF из браузера).
+
+Обе версии собираются из одного источника контента — `scripts/build-presentation.py`:
+
+```bash
+python3 -m pip install reportlab fonttools brotli
+npm run build:presentation
+```
+
+Шрифты для презентации берутся из `src/assets/fonts` (latin + cyrillic субсеты
+объединяются и урезаются до используемых знаков), поэтому внешние ресурсы не нужны.
+
+## Деплой
 
 ### GitHub Pages (демо без сервера)
 
-`npm run build:static` собирает `docs/`: приложение в один HTML и Android-архив.
+`npm run build:static` собирает `docs/`:
 
-- **https://visiontripin.github.io/eco/** — приложение (движок `browserDb`, данные остаются в браузере);
-- `/downloads/podrabotka-msk-android-preview.zip` — автономный архив для Android, работает без интернета.
+| Файл | Что это |
+|---|---|
+| `docs/index.html` | демо-страница продукта (копия корневого `index.html`) |
+| `docs/app.html` | приложение с offline-движком `browserDb` |
+| `docs/404.html` | SPA-fallback для Pages |
+| `docs/presentation/` | презентация: PDF и HTML |
+| `docs/downloads/` | Android-архив и ZIP офлайн-сайта для автономного запуска |
+| `docs/screenshots/`, `docs/styles/`, `docs/src/assets/fonts/` | картинки, стили и шрифты страницы |
 
 Публикация настраивается **один раз** в настройках репозитория — оба варианта поддерживаются:
 
 | Вариант | Настройка | Как обновляется |
 |---|---|---|
-| Branch (по умолчанию) | Settings → Pages → *Deploy from a branch* → `main` / `/docs` | автоматически при коммите в `main` |
+| Branch (по умолчанию) | Settings → Pages → *Deploy from a branch* → `main` / **`/docs`** | автоматически при коммите в `main` |
 | Actions | Settings → Pages → *Source: GitHub Actions* | workflow [`deploy-pages.yml`](.github/workflows/deploy-pages.yml) |
+
+> Важно: если выбрать `/docs`, корневой `index.html` (Vite-шелл) больше не отдаётся
+> как сайт — браузер получает готовую демо-страницу из `docs/index.html`.
 
 Пока Pages не включён, workflow не падает: сборка выполняется, а в Summary сборки
 появляется подсказка, что осталось нажать одну кнопку. Сборка лежит в репозитории
@@ -218,6 +273,10 @@ curl -s localhost:3000/api/health
 
 ```
 .
+├── index.html            # демо-страница продукта (описание, ссылки, презентация)
+├── app.html              # точка входа React-приложения (Vite)
+├── styles/demo.css       # стили демо-страницы (без Tailwind и CDN)
+├── presentation/         # презентация: podrabotka-msk-deck.pdf + index.html
 ├── src/                  # React-приложение
 │   ├── views/            # Главная, поиск, кабинеты, админка, профиль
 │   ├── components/       # Карточки смен, модальные окна, формы
@@ -225,17 +284,20 @@ curl -s localhost:3000/api/health
 │   ├── assets/fonts/     # Manrope + Unbounded (OFL), локально
 │   └── styles/fonts.css
 ├── server/               # Express API, схема и сиды SQLite
-├── scripts/build-static.mjs   # автономная сборка для GitHub Pages
+├── scripts/
+│   ├── build-static.mjs        # автономная сборка для GitHub Pages
+│   ├── build-presentation.py   # презентация: PDF + HTML из одного источника
+│   └── check-links.mjs         # проверка ссылок и ассетов в docs/
 ├── screenshots/          # реальные скриншоты интерфейса
 ├── docs/                 # сгенерированный сайт для GitHub Pages (не править руками)
 ├── archive/tws-hub/      # архивный инженерный проект (не часть продукта)
-└── .github/workflows/    # CI: типы, сборка, smoke-тест API
+└── .github/workflows/    # CI: типы, сборка, проверка ссылок, smoke-тест API
 ```
 
 ## Проверки
 
 ```bash
-npm run verify   # typecheck + сборка + автономная сборка
+npm run verify   # typecheck + сборка + автономная сборка + ссылки
 npm start & curl -fsS localhost:3000/api/health
 ```
 

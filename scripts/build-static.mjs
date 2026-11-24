@@ -2,8 +2,11 @@
  * Сборка автономной (standalone) версии приложения в один HTML-файл.
  *
  * Результат:
- *   docs/index.html                        — приложение для GitHub Pages (offline-first)
+ *   docs/app.html                          — приложение для GitHub Pages (offline-first)
  *   docs/404.html                          — SPA-fallback для Pages
+ *   docs/index.html                        — демо-страница продукта (из корня репозитория)
+ *   docs/styles/, docs/presentation/       — ассеты демо-страницы и презентация
+ *   docs/README.md                         — описание репозитория (для Pages)
  *   docs/.nojekyll                         — отключает Jekyll на Pages
  *   docs/downloads/*.zip                   — архив для Android (открывается без сервера)
  *   docs/screenshots/*.png                 — картинки для README и og:image
@@ -44,6 +47,9 @@ const ANDROID_README = `${APP_NAME} — АВТОНОМНАЯ ВЕРСИЯ ДЛЯ
   - переключение ролей справа сверху: Рабочий / Работодатель / Модератор;
   - публикация вакансий, дублирование смен, чат по отклику, закрытие смены, оценки;
   - модерация отзывов и тарифы в админ-панели.
+
+Рядом с этим файлом в архиве лежит demo.html — страница-описание продукта
+с презентацией и ссылками на скачивание.
 
 Демо-данные и изменения сохраняются только в этом браузере.
 `;
@@ -112,7 +118,7 @@ async function buildBundle() {
   return { cssCode, jsCode };
 }
 
-function writeZip(htmlPath) {
+function writeZip(htmlPath, demoPath) {
   const downloadsDir = path.join(DOCS_DIR, 'downloads');
   fs.mkdirSync(downloadsDir, { recursive: true });
 
@@ -128,6 +134,7 @@ import zipfile
 with zipfile.ZipFile(${JSON.stringify(zipPath)}, 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
     zf.write(${JSON.stringify(htmlPath)}, 'index.html')
     zf.write(${JSON.stringify(instructionPath)}, 'ИНСТРУКЦИЯ_ДЛЯ_ANDROID.txt')
+    zf.write(${JSON.stringify(demoPath)}, 'demo.html')
 `,
   ]);
   return { zipName, zipPath };
@@ -146,6 +153,67 @@ function copyScreenshots() {
   return copied;
 }
 
+/**
+ * Демо-страница продукта (корневой index.html) + её ассеты и презентация.
+ * Корневой index.html — единственный источник, docs/ пересобирается целиком.
+ */
+function copyLandingPage() {
+  // корневая страница ссылается на docs/… (репозиторий); внутри сборки префикс не нужен
+  const source = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  fs.writeFileSync(
+    path.join(DOCS_DIR, 'index.html'),
+    source.replaceAll('href="docs/', 'href="')
+  );
+
+  const demoStyles = path.join(ROOT, 'styles');
+  if (fs.existsSync(demoStyles)) {
+    fs.cpSync(demoStyles, path.join(DOCS_DIR, 'styles'), { recursive: true });
+  }
+
+  // шрифты для демо-страницы и презентации — те же файлы, что и в приложении
+  const fontsDir = path.join(ROOT, 'src', 'assets', 'fonts');
+  if (fs.existsSync(fontsDir)) {
+    fs.cpSync(fontsDir, path.join(DOCS_DIR, 'src', 'assets', 'fonts'), { recursive: true });
+  }
+
+  const presentationDir = path.join(ROOT, 'presentation');
+  if (fs.existsSync(presentationDir)) {
+    fs.cpSync(presentationDir, path.join(DOCS_DIR, 'presentation'), { recursive: true });
+  }
+
+  // README и лицензия — чтобы ссылки на странице работали и на GitHub Pages
+  for (const file of ['README.md', 'LICENSE']) {
+    const source = path.join(ROOT, file);
+    if (fs.existsSync(source)) fs.copyFileSync(source, path.join(DOCS_DIR, file));
+  }
+
+  // архив с готовым сайтом: распаковал и открыл index.html — никакого сервера
+  const siteDir = path.join(TMP_OUT, 'offline-site');
+  const zipSite = path.join(DOCS_DIR, 'downloads', 'podrabotka-msk-offline-site.zip');
+  fs.rmSync(siteDir, { recursive: true, force: true });
+  for (const entry of fs.readdirSync(DOCS_DIR)) {
+    if (entry === 'downloads') continue;
+    fs.cpSync(path.join(DOCS_DIR, entry), path.join(siteDir, entry), { recursive: true });
+  }
+  execFileSync('python3', [
+    '-c',
+    `
+import shutil, zipfile, os
+base = ${JSON.stringify(siteDir)}
+target = ${JSON.stringify(zipSite)}
+with zipfile.ZipFile(target, 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
+    for root, _dirs, files in os.walk(base):
+        for name in files:
+            full = os.path.join(root, name)
+            zf.write(full, os.path.relpath(full, base))
+`,
+  ]);
+
+  // инструменты разработчика не нужны на Pages
+  fs.rmSync(path.join(DOCS_DIR, 'presentation', '__pycache__'), { recursive: true, force: true });
+  return fs.statSync(path.join(DOCS_DIR, 'index.html')).size;
+}
+
 async function main() {
   fs.rmSync(DOCS_DIR, { recursive: true, force: true });
   fs.mkdirSync(DOCS_DIR, { recursive: true });
@@ -157,7 +225,7 @@ async function main() {
     name: `${APP_NAME} — Москва и МО`,
     short_name: APP_NAME,
     description: APP_DESCRIPTION,
-    start_url: './index.html',
+    start_url: './app.html',
     scope: './',
     display: 'standalone',
     orientation: 'portrait',
@@ -172,19 +240,21 @@ async function main() {
   )}`;
 
   const html = buildHtml({ cssCode, jsCode, iconDataUri, manifestDataUri });
-  const indexPath = path.join(DOCS_DIR, 'index.html');
+  const indexPath = path.join(DOCS_DIR, 'app.html');
   fs.writeFileSync(indexPath, html);
   fs.writeFileSync(path.join(DOCS_DIR, '404.html'), html);
   fs.writeFileSync(path.join(DOCS_DIR, '.nojekyll'), '');
 
-  const { zipPath } = writeZip(indexPath);
+  const { zipPath } = writeZip(indexPath, path.join(ROOT, 'index.html'));
   const shots = copyScreenshots();
+  const landing = copyLandingPage();
 
   fs.rmSync(TMP_OUT, { recursive: true, force: true });
 
   const htmlKb = Math.round(fs.statSync(indexPath).size / 1024);
   const zipKb = Math.round(fs.statSync(zipPath).size / 1024);
-  console.log(`docs/          автономное приложение: ${htmlKb} KB (index.html + 404.html)`);
+  console.log(`docs/app.html  автономное приложение: ${htmlKb} KB (+ 404.html)`);
+  console.log(`docs/index.html демо-страница продукта: ${Math.round(landing / 1024)} KB`);;
   console.log(`docs/downloads Android-архив: ${zipKb} KB`);
   console.log(`docs/screenshots ${shots} PNG`);
 }

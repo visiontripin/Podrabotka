@@ -2,32 +2,616 @@
 <html lang="ru">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover" />
-    <title>Подработка.МСК — смены и подработки в Москве и Московской области</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Подработка.МСК — демо платформы быстрых смен в Москве и МО</title>
     <meta
       name="description"
-      content="Подработка.МСК — сервис быстрых смен в Москве и Московской области: оплата за смену, прямые выплаты без комиссии, проверенные работодатели, смены рядом с метро и МЦД."
+      content="Демо платформы быстрых смен Подработка.МСК: смены на сегодня и завтра в Москве и Московской области, отклик в один клик, выплаты после смены без комиссии. Скриншоты, презентация, скачать Android-версию и открыть интерактивное демо."
     />
     <meta name="theme-color" content="#D82376" />
     <meta name="color-scheme" content="light" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-title" content="Подработка.МСК" />
 
-    <!-- Open Graph / link previews -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Подработка.МСК" />
     <meta property="og:locale" content="ru_RU" />
     <meta property="og:title" content="Подработка.МСК — смены на сегодня и завтра" />
     <meta
       property="og:description"
-      content="Быстрые смены в Москве и МО: 0% комиссии с заработка, выплаты сразу после смены, проверенные работодатели."
+      content="Быстрые смены в Москве и МО: 0% комиссии с заработка, выплаты сразу после смены, проверенные работодатели. Демо, скриншоты и презентация."
     />
-    <meta property="og:image" content="./screenshots/og-cover.png" />
+    <meta property="og:image" content="screenshots/og-cover.png" />
     <meta name="twitter:card" content="summary_large_image" />
+
+    <link rel="icon" href="screenshots/og-cover.png" />
+    <link rel="preload" href="src/assets/fonts/manrope-cyrillic-400-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="src/assets/fonts/unbounded-cyrillic-700-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="styles/demo.css" />
   </head>
-  <body class="bg-white text-ink-900 antialiased selection:bg-brand-100 selection:text-brand-800">
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+  <body>
+    <a class="skip-link" href="#features">Перейти к содержанию</a>
+
+    <header class="site-header" id="top">
+      <div class="container header-inner">
+        <a class="logo" href="#top" aria-label="Подработка.МСК — наверх">
+          <span class="logo-dot"></span>
+          <span>Подработка.<b>МСК</b></span>
+        </a>
+
+        <nav class="nav" aria-label="Разделы демо-страницы">
+          <a href="#features">Возможности</a>
+          <a href="#screens">Скриншоты</a>
+          <a href="#how">Как устроено</a>
+          <a href="#presentation">Презентация</a>
+          <a href="#download">Скачать</a>
+          <a href="#api">API</a>
+        </nav>
+
+        <div class="header-actions">
+          <a class="btn btn-ghost btn-sm" href="https://github.com/visiontripin/Podrabotka" rel="noopener">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 .5a11.5 11.5 0 0 0-3.64 22.42c.58.1.79-.25.79-.55v-2.14c-3.2.7-3.88-1.4-3.88-1.4-.52-1.32-1.27-1.67-1.27-1.67-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.76 2.7 1.25 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.68 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.46.11-3.05 0 0 .96-.31 3.15 1.18a10.9 10.9 0 0 1 5.74 0c2.18-1.49 3.14-1.18 3.14-1.18.63 1.59.24 2.76.12 3.05.74.81 1.18 1.84 1.18 3.1 0 4.41-2.69 5.38-5.25 5.67.41.36.78 1.06.78 2.14v3.17c0 .3.2.66.8.55A11.5 11.5 0 0 0 12 .5Z"/></svg>
+            GitHub
+          </a>
+          <a class="btn btn-primary btn-sm" href="docs/app.html">
+            Открыть демо
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M5 12h13m-5-6 6 6-6 6"/></svg>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <!-- HERO -->
+      <section class="hero">
+        <div class="container hero-grid">
+          <div class="hero-copy">
+            <div class="chips">
+              <span class="chip chip-brand">Москва и Московская область</span>
+              <span class="chip">MVP · React 18 + TS + SQLite</span>
+            </div>
+
+            <h1>
+              Смены на сегодня<br />
+              и завтра — <span class="accent">рядом с домом</span>
+            </h1>
+
+            <p class="lead">
+              Платформа быстрых смен: работодатель публикует смену за минуту, исполнитель
+              откликается в один клик и получает деньги сразу после смены — без комиссии
+              с заработка.
+            </p>
+
+            <div class="hero-cta">
+              <a class="btn btn-primary btn-lg" href="docs/app.html">
+                ▶ Открыть интерактивное демо
+              </a>
+              <a class="btn btn-outline btn-lg" href="#download">
+                Скачать версию для Android
+              </a>
+            </div>
+
+            <ul class="hero-facts" aria-label="Коротко о продукте">
+              <li><b>12</b> смен в демо-данных</li>
+              <li><b>27</b> свободных мест</li>
+              <li><b>5 033 ₽</b> средняя смена</li>
+              <li><b>0%</b> комиссии</li>
+            </ul>
+          </div>
+
+          <div class="hero-visual">
+            <a class="browser" href="docs/app.html" aria-label="Открыть интерактивное демо приложения">
+              <div class="browser-bar">
+                <span></span><span></span><span></span>
+                <em>podrabotka.msk · демо</em>
+              </div>
+              <img src="screenshots/01-home-worker.png" alt="Главный экран Подработка.МСК: смены на сегодня и завтра" />
+            </a>
+            <div class="float-card float-card-1">
+              <span class="float-icon">₽</span>
+              <div>
+                <b>+5 500 ₽</b>
+                <small>Смена закрыта · выплата сразу</small>
+              </div>
+            </div>
+            <div class="float-card float-card-2">
+              <span class="float-icon">★</span>
+              <div>
+                <b>4,9 рейтинг</b>
+                <small>Только проверенные отзывы</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- META / О ДЕМО -->
+      <section class="section section-tight">
+        <div class="container">
+          <div class="notice">
+            <strong>Это демо-страница.</strong>
+            Интерактивное приложение открывается по кнопке «Открыть демо» и работает
+            без бэкенда: данные хранятся в браузере. Роль переключается справа сверху
+            (Рабочий · Работодатель · Модератор) — пароли не нужны.
+          </div>
+
+          <div class="stats-grid">
+            <article class="stat-card">
+              <span class="stat-value">3</span>
+              <span class="stat-label">роли в одном приложении</span>
+            </article>
+            <article class="stat-card">
+              <span class="stat-value">10</span>
+              <span class="stat-label">таблиц в SQLite-схеме</span>
+            </article>
+            <article class="stat-card">
+              <span class="stat-value">22</span>
+              <span class="stat-label">эндпоинта REST API</span>
+            </article>
+            <article class="stat-card">
+              <span class="stat-value">0</span>
+              <span class="stat-label">внешних ассетов и запросов к CDN</span>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- ВОЗМОЖНОСТИ -->
+      <section class="section" id="features">
+        <div class="container">
+          <header class="section-head">
+            <span class="eyebrow">Возможности</span>
+            <h2>Три роли — один продукт</h2>
+            <p>
+              Витрина смен, кабинеты исполнителя и работодателя, модерация отзывов
+              и тарифы с реальными лимитами.
+            </p>
+          </header>
+
+          <div class="roles">
+            <article class="role-card">
+              <span class="role-badge">Рабочий</span>
+              <h3>Найти смену и выйти сегодня</h3>
+              <ul>
+                <li>Поиск по названию, адресу и станции метро/МЦД</li>
+                <li>Фильтры: район, оплата, даты, способ выплаты, без опыта</li>
+                <li>Отклик в один клик с сопроводительной запиской</li>
+                <li>Кабинет: заработок, честный рейтинг, индекс выходов</li>
+                <li>Избранное, мини-чат с работодателем, взаимные оценки</li>
+              </ul>
+            </article>
+
+            <article class="role-card role-card-accent">
+              <span class="role-badge">Работодатель</span>
+              <h3>Собрать бригаду на смену</h3>
+              <ul>
+                <li>Публикация смены с авторасчётом часовой ставки</li>
+                <li>Командный набор «N из M» и клонирование смены на завтра</li>
+                <li>Воронка кандидатов с приоритетом PRO-исполнителей</li>
+                <li>Пауза, возобновление и закрытие смены</li>
+                <li>Тарифы: Бесплатный, Про 299 ₽, Старт, Бизнес 1 990 ₽</li>
+              </ul>
+            </article>
+
+            <article class="role-card">
+              <span class="role-badge">Модератор</span>
+              <h3>Держать качество площадки</h3>
+              <ul>
+                <li>Очередь отзывов с мгновенным пересчётом рейтингов</li>
+                <li>Верификация участников и статус «Проверенный»</li>
+                <li>Редактирование тарифов и лимитов</li>
+                <li>Регионы масштабирования: RU, BY, KZ, UZ, AE</li>
+                <li>Валюты, часовые пояса и локали в схеме с первого дня</li>
+              </ul>
+            </article>
+          </div>
+
+          <div class="feature-strip">
+            <div><b>Станции метро и МЦД</b><span>цвет линии и пешая доступность</span></div>
+            <div><b>Прозрачная оплата</b><span>ставка в час считается автоматически</span></div>
+            <div><b>Мобильный-first</b><span>нижняя навигация и крупные тач-зоны</span></div>
+            <div><b>Работает офлайн</b><span>standalone-сборка без сервера</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- СКРИНШОТЫ -->
+      <section class="section section-soft" id="screens">
+        <div class="container">
+          <header class="section-head">
+            <span class="eyebrow">Интерфейс</span>
+            <h2>Как это выглядит</h2>
+            <p>Реальные экраны демо-версии: витрина, поиск, карточка смены, кабинеты и админка.</p>
+          </header>
+
+          <div class="shots">
+            <figure class="shot shot-wide">
+              <img src="screenshots/02-jobs-search.png" alt="Поиск смен: фильтры по категории, району, оплате и датам" loading="lazy" />
+              <figcaption>Поиск смен с фильтрами по метро, оплате и датам</figcaption>
+            </figure>
+            <figure class="shot">
+              <img src="screenshots/03-job-detail.png" alt="Карточка смены с оплатой, адресом и откликом" loading="lazy" />
+              <figcaption>Карточка смены и отклик</figcaption>
+            </figure>
+            <figure class="shot">
+              <img src="screenshots/04-cabinet-worker.png" alt="Кабинет рабочего: заработок, рейтинг, отклики" loading="lazy" />
+              <figcaption>Кабинет рабочего</figcaption>
+            </figure>
+            <figure class="shot">
+              <img src="screenshots/05-cabinet-employer.png" alt="Кабинет работодателя: воронка кандидатов" loading="lazy" />
+              <figcaption>Кабинет работодателя</figcaption>
+            </figure>
+            <figure class="shot">
+              <img src="screenshots/06-admin-moderation.png" alt="Админ-панель: очередь отзывов и тарифы" loading="lazy" />
+              <figcaption>Модерация отзывов и тарифы</figcaption>
+            </figure>
+            <figure class="shot">
+              <img src="screenshots/07-profile-worker.png" alt="Профиль исполнителя: навыки, медкнижка, самозанятость" loading="lazy" />
+              <figcaption>Профиль исполнителя</figcaption>
+            </figure>
+          </div>
+
+          <div class="phones">
+            <figure class="phone">
+              <img src="screenshots/08-mobile-home.png" alt="Мобильная главная страница" loading="lazy" />
+              <figcaption>Мобильная главная</figcaption>
+            </figure>
+            <figure class="phone">
+              <img src="screenshots/09-mobile-jobs.png" alt="Мобильный поиск смен" loading="lazy" />
+              <figcaption>Мобильный поиск смен</figcaption>
+            </figure>
+            <div class="phone-copy">
+              <h3>Приложение живёт в кармане</h3>
+              <p>
+                Нижняя навигация, крупные тач-зоны и PWA-манифест. Автономная сборка
+                открывается с телефона без интернета — как обычный HTML-файл.
+              </p>
+              <a class="btn btn-outline" href="#download">Как открыть на Android</a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- КАК УСТРОЕНО -->
+      <section class="section" id="how">
+        <div class="container">
+          <header class="section-head">
+            <span class="eyebrow">Архитектура</span>
+            <h2>Один код — два режима</h2>
+            <p>
+              Full-stack с API и SQLite для разработки; автономная сборка в один HTML —
+              для GitHub Pages и телефона.
+            </p>
+          </header>
+
+          <div class="arch">
+            <div class="arch-row">
+              <div class="arch-node">
+                <h4>Браузер</h4>
+                <p>React 18 · TypeScript (strict) · Tailwind CSS · lucide-react</p>
+              </div>
+            </div>
+            <div class="arch-arrow" aria-hidden="true">│ <span>src/lib/api.ts — единая точка доступа к данным</span> │</div>
+            <div class="arch-row arch-row-split">
+              <div class="arch-node arch-node-accent">
+                <h4>Server · Node 22</h4>
+                <p>Express + <code>node:sqlite</code>, Vite-middleware в dev, <code>dist/</code> в prod</p>
+              </div>
+              <div class="arch-node">
+                <h4>Offline-движок</h4>
+                <p><code>src/lib/browserDb.ts</code> — те же эндпоинты, данные в localStorage</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="panel">
+              <h3>Модель данных</h3>
+<pre><code>users ──┬── jobs ──┬── applications ── messages
+        │          └── favorites
+        ├── reviews        (взаимные оценки, модерация)
+        ├── notifications
+        └── tariffs        (лимиты по роли)
+
+regions ── locations      (ISO-коды, валюта, таймзона, локаль)</code></pre>
+            </div>
+            <div class="panel">
+              <h3>Быстрый старт</h3>
+<pre><code>git clone https://github.com/visiontripin/Podrabotka.git
+cd Podrabotka
+npm install
+npm run dev   # http://localhost:3000</code></pre>
+              <ul class="tick-list">
+                <li>SQLite через встроенный <code>node:sqlite</code> — без нативных зависимостей</li>
+                <li><code>tsc --noEmit</code> в strict-режиме проверяет фронтенд и сервер</li>
+                <li>Шрифты Manrope и Unbounded (OFL) лежат локально</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="demo-accounts">
+            <h3>Демо-аккаунты</h3>
+            <p class="muted">Роль переключается кнопкой в правом верхнем углу — пароли не нужны.</p>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr><th>ID</th><th>Имя</th><th>Роль</th><th>Что посмотреть</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td>1</td><td>Златов Влас</td><td><span class="tag">Рабочий</span></td><td>Отклики, заработок, рейтинг</td></tr>
+                  <tr><td>2</td><td>Илья Громов</td><td><span class="tag">Работодатель</span></td><td>Воронка кандидатов, публикация смены</td></tr>
+                  <tr><td>7</td><td>Алексей Морозов</td><td><span class="tag">Модератор</span></td><td>Очередь отзывов, тарифы, регионы</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ПРЕЗЕНТАЦИЯ -->
+      <section class="section section-soft" id="presentation">
+        <div class="container">
+          <header class="section-head">
+            <span class="eyebrow">Презентация</span>
+            <h2>12 слайдов о продукте</h2>
+            <p>
+              Проблема, аудитория, модель, тарифы, архитектура, дорожная карта и
+              ограничения MVP — в формате PDF и HTML.
+            </p>
+          </header>
+
+          <div class="presentation-grid">
+            <a class="deck-card" href="presentation/podrabotka-msk-deck.pdf">
+              <span class="deck-icon" aria-hidden="true">PDF</span>
+              <div>
+                <h3>Скачать презентацию (PDF)</h3>
+                <p>Готово к отправке заказчику и инвестору. 16:9, кириллические шрифты встроены.</p>
+              </div>
+              <span class="deck-arrow" aria-hidden="true">↓</span>
+            </a>
+
+            <a class="deck-card" href="presentation/index.html">
+              <span class="deck-icon" aria-hidden="true">HTML</span>
+              <div>
+                <h3>Смотреть презентацию в браузере</h3>
+                <p>Версия на весь экран: листайте стрелками ← → или кнопками внизу.</p>
+              </div>
+              <span class="deck-arrow" aria-hidden="true">→</span>
+            </a>
+          </div>
+
+          <ol class="slide-list">
+            <li><span>01</span> Проблема: смена нужна сегодня</li>
+            <li><span>02</span> Решение: платформа быстрых смен</li>
+            <li><span>03</span> Аудитория и роли</li>
+            <li><span>04</span> Пользовательский путь рабочего</li>
+            <li><span>05</span> Пользовательский путь работодателя</li>
+            <li><span>06</span> Модерация и доверие</li>
+            <li><span>07</span> Монетизация и тарифы</li>
+            <li><span>08</span> Метрики продукта</li>
+            <li><span>09</span> Архитектура и стек</li>
+            <li><span>10</span> Демо и скриншоты</li>
+            <li><span>11</span> Дорожная карта</li>
+            <li><span>12</span> Ограничения MVP и итог</li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- СКАЧАТЬ -->
+      <section class="section" id="download">
+        <div class="container">
+          <header class="section-head">
+            <span class="eyebrow">Скачать и открыть</span>
+            <h2>Ссылки на демо и файлы</h2>
+            <p>Сайт, автономный архив, презентация, исходники и Docker-образ.</p>
+          </header>
+
+          <div class="download-grid">
+            <article class="download-card download-card-primary">
+              <span class="download-tag">Быстрый старт</span>
+              <h3>Интерактивное демо</h3>
+              <p>Полное приложение в браузере: 12 смен, отклики, кабинеты, модерация. Без установки и без сервера.</p>
+              <a class="btn btn-primary" href="docs/app.html">Открыть демо →</a>
+              <code class="download-url">…/Podrabotka/docs/app.html</code>
+            </article>
+
+            <article class="download-card">
+              <span class="download-tag">Windows · macOS · Linux</span>
+              <h3>Docker-образ</h3>
+              <p>Full-stack версия с REST API и SQLite. Данные монтируются томом и переживают перезапуск.</p>
+<pre><code>docker build -t podrabotka-msk .
+docker run -p 3000:3000 \
+  -v "$PWD/data:/app/data" \
+  podrabotka-msk</code></pre>
+              <a class="btn btn-outline" href="https://github.com/visiontripin/Podrabotka/blob/main/Dockerfile" rel="noopener">Dockerfile на GitHub</a>
+            </article>
+
+            <article class="download-card">
+              <span class="download-tag">Android · офлайн</span>
+              <h3>Автономный архив</h3>
+              <p>
+                ZIP с одним HTML-файлом и инструкцией. Распакуйте, откройте <code>index.html</code>
+                в Chrome — приложение работает без интернета.
+              </p>
+              <ul class="meta-list">
+                <li>Размер: ≈300 КБ</li>
+                <li>Данные: localStorage устройства</li>
+                <li>Сервер не требуется</li>
+              </ul>
+              <a class="btn btn-primary" href="docs/downloads/podrabotka-msk-android-preview.zip" download>
+                Скачать ZIP
+              </a>
+            </article>
+
+            <article class="download-card">
+              <span class="download-tag">Windows · macOS · Linux · офлайн</span>
+              <h3>Сайт одним архивом</h3>
+              <p>
+                Вся демо-страница целиком: приложение, презентация PDF, скриншоты и шрифты.
+                Распакуйте и откройте <code>index.html</code> — работает без интернета и сервера.
+              </p>
+              <ul class="meta-list">
+                <li>Размер: ≈2,4 МБ</li>
+                <li>Внутри: демо, приложение, презентация</li>
+                <li>Python/Node не нужны</li>
+              </ul>
+              <a class="btn btn-outline" href="docs/downloads/podrabotka-msk-offline-site.zip" download>
+                Скачать ZIP сайта
+              </a>
+            </article>
+
+            <article class="download-card">
+              <span class="download-tag">Документы</span>
+              <h3>Презентация</h3>
+              <p>PDF для отправки и HTML-версия для показа со сцены или в звонке.</p>
+              <ul class="meta-list">
+                <li>12 слайдов · 16:9</li>
+                <li>PDF + HTML</li>
+                <li>Русский язык</li>
+              </ul>
+              <div class="btn-row">
+                <a class="btn btn-primary" href="presentation/podrabotka-msk-deck.pdf" download>Скачать PDF</a>
+                <a class="btn btn-outline" href="presentation/index.html">Смотреть</a>
+              </div>
+            </article>
+
+            <article class="download-card">
+              <span class="download-tag">Код</span>
+              <h3>Исходники</h3>
+              <p>Репозиторий с полной историей: приложение, сервер, тесты CI, документация.</p>
+              <ul class="meta-list">
+                <li>Node ≥ 20 · TypeScript strict</li>
+                <li>Лицензия MIT</li>
+                <li>GitHub Actions: типы, сборка, smoke-тест API</li>
+              </ul>
+              <div class="btn-row">
+                <a class="btn btn-outline" href="https://github.com/visiontripin/Podrabotka" rel="noopener">Открыть GitHub</a>
+                <a class="btn btn-ghost" href="https://github.com/visiontripin/Podrabotka/archive/refs/heads/main.zip" rel="noopener">Скачать ZIP</a>
+              </div>
+            </article>
+
+            <article class="download-card">
+              <span class="download-tag">Документация</span>
+              <h3>README и API</h3>
+              <p>Описание продукта, быстрый старт, схема данных и таблица всех эндпоинтов.</p>
+              <ul class="meta-list">
+                <li>README на GitHub</li>
+                <li>22 эндпоинта REST API</li>
+                <li>Переменные окружения и деплой</li>
+              </ul>
+              <div class="btn-row">
+                <a class="btn btn-outline" href="https://github.com/visiontripin/Podrabotka#readme">README.md</a>
+                <a class="btn btn-ghost" href="#api">Раздел API</a>
+              </div>
+            </article>
+          </div>
+
+          <p class="hint">
+            Ссылки ведут в <code>docs/</code> — это готовая сборка для GitHub Pages
+            (<code>https://visiontripin.github.io/Podrabotka/docs/</code>). Внутри сборки
+            та же страница лежит в корне, поэтому там ссылки без префикса.
+          </p>
+        </div>
+      </section>
+
+      <!-- API -->
+      <section class="section section-soft" id="api">
+        <div class="container">
+          <header class="section-head">
+            <span class="eyebrow">API</span>
+            <h2>Эндпоинты</h2>
+            <p>Все отдают JSON и принимают демо-заголовок <code>X-User-Id</code>.</p>
+          </header>
+
+          <div class="table-wrap">
+            <table class="api-table">
+              <thead>
+                <tr><th>Метод</th><th>Путь</th><th>Назначение</th></tr>
+              </thead>
+              <tbody>
+                <tr><td><span class="method get">GET</span></td><td><code>/api/bootstrap</code></td><td>Профиль, тарифы, локации, статистика, уведомления</td></tr>
+                <tr><td><span class="method get">GET</span></td><td><code>/api/jobs</code></td><td>Каталог смен с фильтрами и сортировкой</td></tr>
+                <tr><td><span class="method post">POST</span></td><td><code>/api/jobs</code></td><td>Публикация смены с проверкой лимита тарифа</td></tr>
+                <tr><td><span class="method patch">PATCH</span></td><td><code>/api/jobs/:id</code></td><td>Пауза, возобновление, закрытие</td></tr>
+                <tr><td><span class="method post">POST</span></td><td><code>/api/jobs/:id/clone</code></td><td>Клонирование смены на завтра</td></tr>
+                <tr><td><span class="method post">POST</span></td><td><code>/api/jobs/:id/apply</code></td><td>Отклик (учитывает дневной лимит)</td></tr>
+                <tr><td><span class="method post">POST</span></td><td><code>/api/jobs/:id/favorite</code></td><td>Избранное</td></tr>
+                <tr><td><span class="method get">GET</span></td><td><code>/api/applications</code></td><td>Отклики по роли</td></tr>
+                <tr><td><span class="method patch">PATCH</span></td><td><code>/api/applications/:id/status</code></td><td>Принять / отклонить / закрыть смену</td></tr>
+                <tr><td><span class="method post">POST</span></td><td><code>/api/applications/:id/messages</code></td><td>Сообщение в мини-чат</td></tr>
+                <tr><td><span class="method post">POST</span></td><td><code>/api/reviews</code></td><td>Оценка контрагента после смены</td></tr>
+                <tr><td><span class="method put">PUT</span></td><td><code>/api/me/profile</code></td><td>Обновление профиля</td></tr>
+                <tr><td><span class="method put">PUT</span></td><td><code>/api/me/tariff</code></td><td>Смена тарифа</td></tr>
+                <tr><td><span class="method get">GET</span></td><td><code>/api/admin/overview</code></td><td>Сводка модерации</td></tr>
+                <tr><td><span class="method patch">PATCH</span></td><td><code>/api/admin/reviews/:id</code></td><td>Одобрить / отклонить отзыв</td></tr>
+                <tr><td><span class="method get">GET</span></td><td><code>/api/health</code></td><td>Healthcheck для деплоя</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ЧЕСТНЫЕ ОГРАНИЧЕНИЯ -->
+      <section class="section">
+        <div class="container">
+          <div class="limits">
+            <div>
+              <h2>Что это такое и чего здесь нет</h2>
+              <p class="muted">Работающий MVP с демо-данными, а не продакшен-маркетплейс.</p>
+            </div>
+            <ul class="limits-list">
+              <li><b>Демо-аутентификация.</b> Пользователь приходит заголовком, сессий и паролей нет.</li>
+              <li><b>Платежи не подключены.</b> «СБП сразу», «На руки», «СМЗ» — модель данных и UI, без реальных выплат.</li>
+              <li><b>SQLite на один инстанс.</b> Для горизонтального масштабирования нужен PostgreSQL.</li>
+              <li><b>Данные вымышлены.</b> Вакансии и отзывы сгенерированы, реальные компании не упоминаются.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- ФИНАЛЬНЫЙ CTA -->
+      <section class="final-cta">
+        <div class="container">
+          <h2>Хотите посмотреть, как это работает?</h2>
+          <p>Демо открывается одним кликом — без регистрации и без установки.</p>
+          <div class="btn-row center">
+            <a class="btn btn-primary btn-lg" href="docs/app.html">▶ Открыть демо</a>
+            <a class="btn btn-outline btn-lg" href="presentation/index.html">Смотреть презентацию</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-inner">
+        <div>
+          <a class="logo" href="#top"><span class="logo-dot"></span><span>Подработка.<b>МСК</b></span></a>
+          <p class="muted small">Платформа быстрых смен в Москве и Московской области.</p>
+        </div>
+        <div class="footer-cols">
+          <div>
+            <h4>Демо</h4>
+            <a href="docs/app.html">Приложение</a>
+            <a href="presentation/index.html">Презентация</a>
+            <a href="docs/downloads/podrabotka-msk-android-preview.zip">Android ZIP</a>
+            <a href="docs/downloads/podrabotka-msk-offline-site.zip">Сайт офлайн</a>
+          </div>
+          <div>
+            <h4>Проект</h4>
+            <a href="https://github.com/visiontripin/Podrabotka#readme">README</a>
+            <a href="https://github.com/visiontripin/Podrabotka" rel="noopener">GitHub</a>
+            <a href="https://github.com/visiontripin/Podrabotka/blob/main/LICENSE">Лицензия MIT</a>
+          </div>
+          <div>
+            <h4>Технологии</h4>
+            <span>React 18 · TypeScript</span>
+            <span>Express · SQLite</span>
+            <span>Vite · Tailwind CSS</span>
+          </div>
+        </div>
+      </div>
+      <div class="container footer-bottom">
+        <span>© 2026 Подработка.МСК · демо-проект</span>
+        <span>Демо-данные · без реальных выплат</span>
+      </div>
+    </footer>
   </body>
 </html>
