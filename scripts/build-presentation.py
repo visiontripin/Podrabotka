@@ -3,7 +3,7 @@
 Сборка презентации «Подработка.МСК» из одного источника контента.
 
 Результат:
-  presentation/podrabotka-msk-deck.pdf  — 12 слайдов 16:9, шрифты встроены
+  presentation/podrabotka-msk-deck.pdf  — 13 слайдов 16:9, шрифты встроены
   presentation/index.html               — те же слайды в браузере (стрелки ← →)
 
 Требования (только для пересборки презентации, не для запуска приложения):
@@ -1248,7 +1248,7 @@ def build_html(fonts: dict[str, str]) -> Path:
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Подработка.МСК — презентация</title>
-<meta name="description" content="Презентация продукта Подработка.МСК: платформа быстрых смен в Москве и Московской области. 12 слайдов.">
+<meta name="description" content="Презентация продукта Подработка.МСК: платформа быстрых смен в Москве и Московской области. 13 слайдов.">
 <link rel="icon" href="../screenshots/og-cover.png">
 <style>
 {css_fonts}

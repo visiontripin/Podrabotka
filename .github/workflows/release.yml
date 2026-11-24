@@ -1,0 +1,64 @@
+name: Release
+
+# Собирает релизные артефакты и прикрепляет их к GitHub Release.
+# Запуск вручную (Actions → Release → Run workflow) или тегом v*.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Тег релиза (например, v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and publish release assets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Install presentation toolchain
+        run: python3 -m pip install --quiet reportlab fonttools brotli
+
+      - name: Build presentation (PDF + HTML)
+        run: npm run build:presentation
+
+      - name: Build static site and archives
+        run: npm run build:static
+
+      - name: Check links
+        run: npm run check:links
+
+      - name: Prepare release assets
+        run: |
+          mkdir -p release
+          cp docs/downloads/podrabotka-msk-offline-site.zip release/
+          cp docs/downloads/podrabotka-msk-android-preview.zip release/
+          cp presentation/podrabotka-msk-deck.pdf release/
+          ls -lh release
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          name: Подработка.МСК ${{ github.event.inputs.tag || github.ref_name }}
+          body_path: .github/RELEASE_NOTES.md
+          files: release/*
+          fail_on_unmatched_files: true

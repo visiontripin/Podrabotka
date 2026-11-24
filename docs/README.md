@@ -48,7 +48,7 @@
 |---|---|
 | **Демо-страница продукта** (описание, скриншоты, презентация, все ссылки) | <https://visiontripin.github.io/Podrabotka/> |
 | **Интерактивное приложение** (без сервера, данные в браузере) | <https://visiontripin.github.io/Podrabotka/app.html> |
-| **Презентация в браузере** (12 слайдов, листается стрелками) | <https://visiontripin.github.io/Podrabotka/presentation/> |
+| **Презентация в браузере** (13 слайдов, листается стрелками) | <https://visiontripin.github.io/Podrabotka/presentation/> |
 | **Презентация PDF** | [`presentation/podrabotka-msk-deck.pdf`](presentation/podrabotka-msk-deck.pdf) |
 | **Android-архив** (офлайн, открывается без интернета) | [`docs/downloads/podrabotka-msk-android-preview.zip`](docs/downloads/podrabotka-msk-android-preview.zip) |
 | **Офлайн-сайт архивом** (страница + приложение + презентация) | [`docs/downloads/podrabotka-msk-offline-site.zip`](docs/downloads/podrabotka-msk-offline-site.zip) |
@@ -181,7 +181,7 @@ npm run dev
 
 ## Презентация
 
-12 слайдов о продукте: проблема, решение, аудитория, путь исполнителя и работодателя,
+13 слайдов: обложка, проблема, решение, аудитория, путь исполнителя и работодателя,
 доверие и модерация, тарифы, метрики, архитектура, демо, дорожная карта, ограничения.
 
 - PDF — [`presentation/podrabotka-msk-deck.pdf`](presentation/podrabotka-msk-deck.pdf) (16:9, кириллица встроена);
