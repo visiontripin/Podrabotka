@@ -310,6 +310,88 @@ def cmd_start(message: types.Message):
     )
 
 
+# Явные command-хендлеры, чтобы Bot-Control видел прикрепление клавиатур
+@bot.message_handler(commands=["jobs"])
+def cmd_jobs(message: types.Message):
+    bot.send_message(
+        message.chat.id,
+        "🔍 <b>Доступные смены (демо)</b>\nВыберите смену для подробностей:",
+        reply_markup=kb_jobs_list(),
+    )
+
+
+@bot.message_handler(commands=["applications"])
+def cmd_applications(message: types.Message):
+    text_out = "📝 <b>Мои отклики (демо)</b>\n\n"
+    for a in DEMO_MY_APPLICATIONS:
+        text_out += (
+            f"#{a['id']} {STATUS_LABELS[a['status']]} — {a['job_title']}\n"
+            f"  🗓 {a['job_date']}, {a['job_time']} · {money(a['job_pay'])}\n"
+            f"  🏢 {a['employer']}\n\n"
+        )
+    bot.send_message(message.chat.id, text_out, reply_markup=kb_applications())
+
+
+@bot.message_handler(commands=["myjobs"])
+def cmd_myjobs(message: types.Message):
+    text_out = "📦 <b>Мои смены (демо)</b>\n\n"
+    for j in DEMO_MY_JOBS:
+        text_out += (
+            f"• #{j['id']} {j['title']} — {money(j['pay'])} · {j['date']}\n"
+            f"  {JOB_STATUS_LABELS[j['status']]} · откликов: {j['applications']} (в ожидании: {j['pending']})\n\n"
+        )
+    bot.send_message(message.chat.id, text_out, reply_markup=kb_my_jobs())
+
+
+@bot.message_handler(commands=["candidates"])
+def cmd_candidates(message: types.Message):
+    bot.send_message(
+        message.chat.id,
+        "👥 <b>Кандидаты (демо)</b>\n\n"
+        "На смену «Грузчик на склад Wildberries» откликнулся:\n"
+        "• #7 — Алексей Demo — ⏳ Ожидает решения\n\n"
+        "Выберите действие:",
+        reply_markup=kb_candidates(101),
+    )
+
+
+@bot.message_handler(commands=["jobdetail"])
+def cmd_jobdetail(message: types.Message):
+    j = DEMO_JOBS[0]
+    bot.send_message(
+        message.chat.id,
+        job_text(j) + "\nНажмите «Откликнуться», чтобы оставить заявку (имитация).",
+        reply_markup=kb_job_detail(j["id"], has_applied=False),
+    )
+
+
+@bot.message_handler(commands=["appdetail"])
+def cmd_appdetail(message: types.Message):
+    a = DEMO_MY_APPLICATIONS[0]
+    bot.send_message(
+        message.chat.id,
+        f"<b>Отклик #{a['id']}</b> — {STATUS_LABELS[a['status']]}\n\n"
+        f"💼 {a['job_title']}\n"
+        f"🗓 {a['job_date']}, {a['job_time']} · {money(a['job_pay'])}\n"
+        f"🏢 {a['employer']}\n\n"
+        f"(в демо-режиме статус не меняется)",
+        reply_markup=kb_app_detail(a["id"], a["status"]),
+    )
+
+
+@bot.message_handler(commands=["myjobdetail"])
+def cmd_myjobdetail(message: types.Message):
+    j = DEMO_MY_JOBS[0]
+    bot.send_message(
+        message.chat.id,
+        f"<b>Смена #{j['id']}</b> — {j['title']}\n"
+        f"💰 {money(j['pay'])} · 📍 {j['metro']} · 🗓 {j['date']}\n"
+        f"Статус: {JOB_STATUS_LABELS[j['status']]}\n"
+        f"Откликов: {j['applications']} (в ожидании: {j['pending']})\n",
+        reply_markup=kb_my_job_detail(j["id"], j["status"]),
+    )
+
+
 @bot.message_handler(commands=["help"])
 def cmd_help(message: types.Message):
     bot.send_message(
