@@ -89,6 +89,7 @@ function buildHtml({ cssCode, jsCode, iconDataUri, manifestDataUri }) {
 async function buildBundle() {
   await build({
     configFile: false,
+    appType: 'mpa',
     plugins: [react()],
     define: {
       // автономная сборка не ходит в /api вообще — данные из localStorage
@@ -100,6 +101,8 @@ async function buildBundle() {
       cssCodeSplit: false,
       assetsInlineLimit: 100_000_000,
       rollupOptions: {
+        // точка входа — приложение, а не демо-страница в корне
+        input: path.join(ROOT, 'app.html'),
         output: {
           format: 'iife',
           name: 'PodrabotkaApp',

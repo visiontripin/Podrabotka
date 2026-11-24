@@ -81,6 +81,22 @@ if (exists('index.html')) checkHtml('index.html');
 if (exists('presentation/index.html')) checkHtml('presentation/index.html');
 if (exists('styles/demo.css')) checkCss('styles/demo.css');
 
+// --- приложение действительно собрано (а не пустой Vite-шелл) -----------------
+if (exists('app.html')) {
+  const app = fs.readFileSync(path.join(DOCS, 'app.html'), 'utf8');
+  const inline = app.includes('<script>') ? app.split('<script>')[1] : '';
+  if (!app.includes('<div id="root">')) errors.push('docs/app.html: нет контейнера #root');
+  if (inline.length < 100_000) {
+    errors.push(
+      `docs/app.html: JS-бандл подозрительно мал (${Math.round(inline.length / 1024)} KB) — ` +
+        'проверьте, что build:static собирает app.html, а не index.html'
+    );
+  }
+  if (!app.includes('podrabotka_msk_standalone_db_v1')) {
+    errors.push('docs/app.html: нет offline-движка browserDb (сборка не standalone)');
+  }
+}
+
 // --- архив содержит оба HTML -------------------------------------------------
 const zipPath = path.join(DOCS, 'downloads', 'podrabotka-msk-android-preview.zip');
 if (fs.existsSync(zipPath)) {
