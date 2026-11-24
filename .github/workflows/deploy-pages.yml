@@ -1,13 +1,9 @@
 name: Deploy demo
 
-# Публикует автономную сборку (docs/) на GitHub Pages.
-#
-# Требование: в репозитории один раз включён GitHub Pages
-#   Settings → Pages → Source: "GitHub Actions"
-# (или "Deploy from a branch" → main → /docs — тогда деплой идёт без workflow).
-#
-# Если Pages ещё не включён, workflow не падает: сборка проходит, а в логах
-# остаётся предупреждение — CI остаётся зелёным.
+# Собирает автономную сборку (docs/) и публикует её на GitHub Pages,
+# если сайт настроен как «GitHub Actions». Если Pages отдаётся из ветки
+# (Settings → Pages → Deploy from a branch → main /), деплой пропускается:
+# GitHub сам публикует docs/ при коммите в main, и второй деплой только мешает.
 on:
   push:
     branches: [main]
@@ -46,28 +42,37 @@ jobs:
       - name: Check links and assets
         run: npm run check:links
 
-      - name: Detect Pages site
-        id: pages
-        continue-on-error: true
+      - name: Detect Pages source
+        id: source
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          build_type=$(gh api "repos/${{ github.repository }}/pages" --jq '.build_type' 2>/dev/null || echo none)
+          echo "build_type=$build_type" >> "$GITHUB_OUTPUT"
+          echo "Pages build type: $build_type"
+
+      - name: Pages uses a branch — nothing to deploy
+        if: steps.source.outputs.build_type != 'workflow'
+        run: |
+          echo "### Демо собирается без деплоя" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "GitHub Pages отдаёт сайт из ветки (\`main\` → \`docs/\`), поэтому публикация" >> "$GITHUB_STEP_SUMMARY"
+          echo "идёт автоматически при коммите — отдельный деплой не нужен." >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Хотите деплой из Actions: **Settings → Pages → Source: GitHub Actions**." >> "$GITHUB_STEP_SUMMARY"
+          echo "::notice::Pages настроен на ветку — деплой из Actions пропущен, сборка при этом проверена."
+
+      - name: Configure Pages
+        if: steps.source.outputs.build_type == 'workflow'
         uses: actions/configure-pages@v5
 
-      - name: Pages is disabled — manual step required
-        if: steps.pages.outcome != 'success'
-        run: |
-          echo "::warning::GitHub Pages не включён. Включите один раз: Settings → Pages → Source: 'GitHub Actions' (или 'Deploy from a branch' → main → /docs). Сборка при этом уже готова в docs/."
-          echo "### GitHub Pages не включён" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "Статическая сборка готова в \`docs/\`, но публикация не выполнена." >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "Включите один раз: **Settings → Pages → Source: GitHub Actions** (или **Deploy from a branch → main → /docs**)." >> "$GITHUB_STEP_SUMMARY"
-
       - name: Upload Pages artifact
-        if: steps.pages.outcome == 'success'
+        if: steps.source.outputs.build_type == 'workflow'
         uses: actions/upload-pages-artifact@v3
         with:
           path: docs
 
       - name: Deploy to GitHub Pages
         id: deploy
-        if: steps.pages.outcome == 'success'
+        if: steps.source.outputs.build_type == 'workflow'
         uses: actions/deploy-pages@v4
