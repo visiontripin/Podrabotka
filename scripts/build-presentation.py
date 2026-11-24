@@ -692,8 +692,11 @@ def build_pdf(fonts: dict[str, str]) -> Path:
             steps = slide["steps"]
             gap = 13
             cw = (CONTENT_W - gap * (len(steps) - 1)) / len(steps)
-            ch = min(available - 92, 208)
-            cy = top - ch
+            ch = min(available - 108, 196)
+            # блок «шаги + метрики» центрируем по вертикали, чтобы низ не пустовал
+            block = ch + 18 + 78
+            shift = max(0.0, (available - block) * 0.38)
+            cy = top - ch - shift
             for index, (label, text) in enumerate(steps):
                 cx = MARGIN + index * (cw + gap)
                 card(cx, cy, cw, ch)
@@ -714,7 +717,7 @@ def build_pdf(fonts: dict[str, str]) -> Path:
                     c.setFont("Manrope-Bold", 15)
                     c.drawString(cx + cw + 1.5, cy + ch / 2 - 3, ">")
             if slide.get("metrics"):
-                metric_tiles(cy - 20, slide["metrics"], height=86)
+                metric_tiles(cy - 18, slide["metrics"], height=78)
 
         # ---------------------------------------------------------------- TABLE
         elif kind == "table":
@@ -970,6 +973,10 @@ h2{font-family:'Unbounded',sans-serif;font-weight:700;font-size:2.14vw;line-heig
 .flow h3::before{display:none}
 .flow p{font-size:.76vw;line-height:1.55}
 .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:.8vw;margin-top:1.7vh}
+.shot-row{display:flex;align-items:center;gap:1.4vw;margin-top:2.2vh}
+.shot-row img{width:38%;border:1px solid #E8E8EF;border-radius:.8vw;
+  box-shadow:0 10px 26px rgba(17,17,21,.08)}
+.shot-row p{font-size:.82vw;line-height:1.6;color:#6B7280;max-width:52%;margin:0}
 .metric{background:#FDF2F7;border:1px solid #FCE7F1;border-radius:.75vw;padding:1.2vh 1vw}
 .metric b{display:block;font-family:'Unbounded',sans-serif;font-size:1.02vw;color:#BA1762;
   letter-spacing:-.02em}
