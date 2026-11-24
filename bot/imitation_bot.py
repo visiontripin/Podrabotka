@@ -1,810 +1,603 @@
-#!/usr/bin/env python3
-"""Имитационный бот Подработка.МСК.
+# Подработка.МСК — имитационный бот (демо, без базы данных)
+#
+# Полностью статический конфиг для BotControl:
+#  • ни одного import, ни одной f-строки, никакого HTML в ответах;
+#  • все тексты ответов — литералы (импортёр видит их целиком);
+#  • у каждой inline-кнопки свой литеральный callback_data и своя функция
+#    с точным сравнением данных нажатия;
+#  • каждое inline-меню объявлено без аргументов и прикреплено reply_markup
+#    в команде-разделе;
+#  • в файле ровно одна ReplyKeyboardMarkup — chat_keyboard(), прикреплена к /start;
+#  • у каждой кнопки нижней клавиатуры своё отдельное текстовое правило.
 
-Работает БЕЗ базы данных — все смены, пользователи, отклики и статусы
-хранятся в памяти и выдаются как демонстрационные данные. Подходит для
-демонстрации работы сервиса в Bot-Control без настройки реального back-end.
+BOT_TOKEN = "НЕ_ИМПОРТИРУЕТСЯ"
 
-Запуск:
-    PODRABOTKA_BOT_TOKEN=123456:ABC-DEF... python bot/imitation_bot.py
-"""
+# ---------- 1. Поведение и паузы ----------
+ANSWER_COOLDOWN = 15
+DEFAULT_TYPING_SECONDS = 3
 
-from __future__ import annotations
-
-import os
-from datetime import date, timedelta
-
-import telebot
-from telebot import types
-
-BOT_TOKEN = os.environ.get("PODRABOTKA_BOT_TOKEN", "")
-if not BOT_TOKEN:
-    raise RuntimeError(
-        "Задайте PODRABOTKA_BOT_TOKEN (токен от @BotFather), например:\n"
-        "  PODRABOTKA_BOT_TOKEN=123456:ABC-DEF... python bot/imitation_bot.py"
-    )
-
-bot = telebot.TeleBot(BOT_TOKEN, parse_mode="HTML")
-
-# ---------------------------------------------------------------------------
-# Демо-данные (в памяти, имитация работы сервиса)
-# ---------------------------------------------------------------------------
-
-TODAY = date.today().isoformat()
-TOMORROW = (date.today() + timedelta(days=1)).isoformat()
-DAY_AFTER = (date.today() + timedelta(days=2)).isoformat()
-
-DEMO_JOBS = [
-    {
-        "id": 101,
-        "title": "Грузчик на склад Wildberries",
-        "category": "Склад",
-        "pay": 4500,
-        "metro": "Автозаводская",
-        "date": TOMORROW,
-        "time": "09:00–18:00",
-        "slots": "2 из 5",
-        "status": "active",
-        "employer": "ООО «Логистика-М»",
-        "verified": True,
-    },
-    {
-        "id": 102,
-        "title": "Курьер доставки еды",
-        "category": "Курьер",
-        "pay": 3800,
-        "metro": "Китай-город",
-        "date": TODAY,
-        "time": "12:00–21:00",
-        "slots": "1 из 3",
-        "status": "active",
-        "employer": "ИП Смирнов А.В.",
-        "verified": False,
-    },
-    {
-        "id": 103,
-        "title": "Официант в кафе",
-        "category": "Официант",
-        "pay": 3200,
-        "metro": "Тверская",
-        "date": DAY_AFTER,
-        "time": "17:00–23:00",
-        "slots": "4 из 6",
-        "status": "active",
-        "employer": "Кафе «Уют»",
-        "verified": True,
-    },
-    {
-        "id": 104,
-        "title": "Промоутер в ТЦ",
-        "category": "Промоутер",
-        "pay": 2900,
-        "metro": "ВДНХ",
-        "date": TODAY,
-        "time": "10:00–16:00",
-        "slots": "0 из 2",
-        "status": "active",
-        "employer": "Агентство «Ярмарка»",
-        "verified": False,
-    },
-    {
-        "id": 105,
-        "title": "Уборщик помещений",
-        "category": "Уборка",
-        "pay": 3400,
-        "metro": "Парк Победы",
-        "date": TOMORROW,
-        "time": "08:00–12:00",
-        "slots": "3 из 3",
-        "status": "active",
-        "employer": "ООО «Чистый дом»",
-        "verified": True,
-    },
+# ---------- 2. Уточняющие вопросы на незнакомые сообщения ----------
+CLARIFY_QUESTIONS = [
+    "Не понял, {user} 🙂 Выбери раздел кнопками внизу или открой /help.",
+    "Такого раздела в демо нет. Нажми /start — покажу главное меню.",
+    "Напиши /examples — там показано, что делает каждая кнопка.",
 ]
 
-DEMO_MY_JOBS = [
-    {
-        "id": 101,
-        "title": "Грузчик на склад Wildberries",
-        "pay": 4500,
-        "metro": "Автозаводская",
-        "date": TOMORROW,
-        "status": "active",
-        "applications": 2,
-        "pending": 2,
-    },
-    {
-        "id": 103,
-        "title": "Официант в кафе",
-        "pay": 3200,
-        "metro": "Тверская",
-        "date": DAY_AFTER,
-        "status": "paused",
-        "applications": 0,
-        "pending": 0,
-    },
-]
+# ---------- 3. Нижняя клавиатура чата (единственная ReplyKeyboardMarkup) ----------
+def chat_keyboard():
+    markup = ReplyKeyboardMarkup(resize_keyboard=True)
+    markup.row(KeyboardButton("Я ищу подработку (исполнитель)"), KeyboardButton("Я нанимаю (работодатель)"))
+    markup.row(KeyboardButton("Найти смену"), KeyboardButton("Откликнуться"))
+    markup.row(KeyboardButton("Мои отклики"), KeyboardButton("Мои смены"))
+    markup.row(KeyboardButton("Кандидаты"), KeyboardButton("Чаты"))
+    markup.row(KeyboardButton("Профиль"), KeyboardButton("Тарифы"))
+    markup.row(KeyboardButton("Помощь"))
+    return markup
 
-DEMO_MY_APPLICATIONS = [
-    {
-        "id": 7,
-        "job_title": "Курьер доставки еды",
-        "job_pay": 3800,
-        "job_date": TODAY,
-        "job_time": "12:00–21:00",
-        "status": "pending",
-        "employer": "ИП Смирнов А.В.",
-    },
-    {
-        "id": 5,
-        "job_title": "Промоутер в ТЦ",
-        "job_pay": 2900,
-        "job_date": DAY_AFTER,
-        "job_time": "10:00–16:00",
-        "status": "accepted",
-        "employer": "Агентство «Ярмарка»",
-    },
-]
+# ---------- 4. Inline-меню (все без аргументов) ----------
+def jobs_menu():
+    markup = InlineKeyboardMarkup()
+    markup.row(InlineKeyboardButton("🏬 Грузчик на склад — 4500 ₽", callback_data="job:101"))
+    markup.row(InlineKeyboardButton("🚴 Курьер доставки еды — 3800 ₽", callback_data="job:102"))
+    markup.row(InlineKeyboardButton("🍽 Официант в кафе — 3200 ₽", callback_data="job:103"))
+    markup.row(InlineKeyboardButton("🎤 Промоутер в ТЦ — 2900 ₽", callback_data="job:104"))
+    markup.row(InlineKeyboardButton("🧹 Уборщик помещений — 3400 ₽", callback_data="job:105"))
+    markup.row(InlineKeyboardButton("🌐 Веб-версия", url="https://visiontripin.github.io/Podrabotka/"))
+    return markup
 
-STATUS_LABELS = {
-    "pending": "⏳ Ожидает решения",
-    "accepted": "✅ Принят",
-    "completed": "🏁 Смена завершена",
-    "rejected": "⛔ Отказ",
-    "cancelled": "🚫 Отменён",
-}
+def apply_menu():
+    markup = InlineKeyboardMarkup()
+    markup.row(InlineKeyboardButton("🏬 Грузчик — 4500 ₽", callback_data="apply:101"))
+    markup.row(InlineKeyboardButton("🚴 Курьер — 3800 ₽", callback_data="apply:102"))
+    markup.row(InlineKeyboardButton("🍽 Официант — 3200 ₽", callback_data="apply:103"))
+    markup.row(InlineKeyboardButton("🎤 Промоутер — 2900 ₽", callback_data="apply:104"))
+    markup.row(InlineKeyboardButton("🧹 Уборщик — 3400 ₽", callback_data="apply:105"))
+    return markup
 
-JOB_STATUS_LABELS = {
-    "active": "🟢 Активна",
-    "paused": "⏸ Пауза",
-    "closed": "⛔ Закрыта",
-}
+def applications_menu():
+    markup = InlineKeyboardMarkup()
+    markup.row(InlineKeyboardButton("Отклик #7 — ⏳ Ожидает решения", callback_data="app:7"))
+    markup.row(InlineKeyboardButton("Отклик #5 — ✅ Принят", callback_data="app:5"))
+    return markup
 
-CATEGORY_EMOJI = {
-    "Склад": "🏬",
-    "Курьер": "🚴",
-    "Официант": "🍽",
-    "Промоутер": "🎤",
-    "Уборка": "🧹",
-    "Стройка": "🏗",
-    "Мероприятия": "🎪",
-    "Грузчик": "📦",
-}
+def my_jobs_menu():
+    markup = InlineKeyboardMarkup()
+    markup.row(InlineKeyboardButton("Смена #101 — 🟢 Активна", callback_data="myjob:101"))
+    markup.row(InlineKeyboardButton("Смена #103 — ⏸ Пауза", callback_data="myjob:103"))
+    return markup
 
-# ---------------------------------------------------------------------------
-# Сессии пользователей (в памяти)
-# ---------------------------------------------------------------------------
+def candidates_menu():
+    markup = InlineKeyboardMarkup()
+    markup.row(InlineKeyboardButton("✅ Принять #12", callback_data="cand:accept:12"), InlineKeyboardButton("❌ Отклонить #12", callback_data="cand:reject:12"))
+    markup.row(InlineKeyboardButton("✅ Принять #13", callback_data="cand:accept:13"), InlineKeyboardButton("❌ Отклонить #13", callback_data="cand:reject:13"))
+    return markup
 
-sessions: dict[int, dict] = {}
-
-
-def session(chat_id: int) -> dict:
-    return sessions.setdefault(chat_id, {"role": None, "view": "start"})
-
-
-# ---------------------------------------------------------------------------
-# Клавиатуры
-# ---------------------------------------------------------------------------
-
-def kb_main(role: str | None = None) -> types.ReplyKeyboardMarkup:
-    kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    if role == "employer":
-        kb.row("📦 Мои смены", "👥 Кандидаты")
-        kb.row("💬 Чаты", "👤 Профиль")
-        kb.row("💰 Тарифы", "❓ Помощь")
-    elif role == "worker":
-        kb.row("🔍 Найти смену", "📅 Сегодня", "📅 Завтра")
-        kb.row("⭐ Избранное", "📝 Мои отклики")
-        kb.row("💬 Чаты", "👤 Профиль")
-        kb.row("💰 Тарифы", "❓ Помощь")
-    else:
-        kb.row("🔗 Привязать аккаунт", "📝 Регистрация")
-        kb.row("🔍 Найти смену", "💰 Тарифы", "❓ Помощь")
-    return kb
-
-
-def kb_jobs_list() -> types.InlineKeyboardMarkup:
-    kb = types.InlineKeyboardMarkup()
-    for j in DEMO_JOBS:
-        emoji = CATEGORY_EMOJI.get(j["category"], "📋")
-        kb.row(
-            types.InlineKeyboardButton(
-                f"{emoji} {j['title']} — {j['pay']} ₽", callback_data=f"job:{j['id']}"
-            )
-        )
-    kb.row(types.InlineKeyboardButton("🔄 Обновить", callback_data="jobs:refresh"))
-    kb.row(types.InlineKeyboardButton("🌐 Веб-версия", url="https://visiontripin.github.io/Podrabotka/"))
-    return kb
-
-
-def kb_job_detail(job_id: int, has_applied: bool = False) -> types.InlineKeyboardMarkup:
-    kb = types.InlineKeyboardMarkup()
-    if not has_applied:
-        kb.row(types.InlineKeyboardButton("✋ Откликнуться", callback_data=f"apply:{job_id}"))
-    else:
-        kb.row(types.InlineKeyboardButton("⏳ Отклик отправлен", callback_data="noop"))
-    kb.row(types.InlineKeyboardButton("🤍 В избранное", callback_data=f"fav:{job_id}"))
-    kb.row(types.InlineKeyboardButton("◀ К списку", callback_data="jobs:list"))
-    return kb
-
-
-def kb_applications() -> types.InlineKeyboardMarkup:
-    kb = types.InlineKeyboardMarkup()
-    for a in DEMO_MY_APPLICATIONS:
-        label = f"Отклик #{a['id']} — {STATUS_LABELS[a['status']]}"
-        kb.row(types.InlineKeyboardButton(label, callback_data=f"myapp:{a['id']}"))
-    return kb
-
-
-def kb_my_jobs() -> types.InlineKeyboardMarkup:
-    kb = types.InlineKeyboardMarkup()
-    for j in DEMO_MY_JOBS:
-        kb.row(types.InlineKeyboardButton(f"Смена #{j['id']} — {JOB_STATUS_LABELS[j['status']]}", callback_data=f"myjob:{j['id']}"))
-    return kb
-
-
-def kb_candidates(job_id: int) -> types.InlineKeyboardMarkup:
-    kb = types.InlineKeyboardMarkup()
-    kb.row(types.InlineKeyboardButton("✅ Принять кандидата #7", callback_data=f"accept:7:{job_id}"))
-    kb.row(types.InlineKeyboardButton("❌ Отклонить кандидата #7", callback_data=f"reject:7:{job_id}"))
-    kb.row(types.InlineKeyboardButton("◀ К сменам", callback_data="employer:myjobs"))
-    return kb
-
-
-def kb_app_detail(app_id: int, status: str) -> types.InlineKeyboardMarkup:
-    kb = types.InlineKeyboardMarkup()
-    if status == "pending":
-        kb.row(types.InlineKeyboardButton("🚫 Отменить отклик", callback_data=f"cancel:{app_id}"))
-    kb.row(types.InlineKeyboardButton("💬 Написать работодателю", callback_data=f"chat:{app_id}"))
-    kb.row(types.InlineKeyboardButton("◀ К откликам", callback_data="worker:applications"))
-    return kb
-
-
-def kb_my_job_detail(job_id: int, status: str) -> types.InlineKeyboardMarkup:
-    kb = types.InlineKeyboardMarkup()
-    if status == "active":
-        kb.row(types.InlineKeyboardButton("⏸ Приостановить", callback_data=f"pausejob:{job_id}"))
-    elif status == "paused":
-        kb.row(types.InlineKeyboardButton("▶️ Возобновить", callback_data=f"resumejob:{job_id}"))
-    kb.row(types.InlineKeyboardButton("👥 Кандидаты", callback_data=f"candidates:{job_id}"))
-    kb.row(types.InlineKeyboardButton("⛔ Закрыть смену", callback_data=f"closejob:{job_id}"))
-    kb.row(types.InlineKeyboardButton("◀ Мои смены", callback_data="employer:myjobs"))
-    return kb
-
-
-# ---------------------------------------------------------------------------
-# Вспомогательные форматеры
-# ---------------------------------------------------------------------------
-
-def money(amount: int) -> str:
-    return f"{amount:,}".replace(",", " ") + " ₽"
-
-
-def job_text(j: dict) -> str:
-    verified = " ✅" if j.get("verified") else ""
-    return (
-        f"{CATEGORY_EMOJI.get(j['category'], '📋')} <b>{j['title']}</b>{verified}\n"
-        f"💰 <b>{money(j['pay'])}</b> за смену\n"
-        f"📍 {j['metro']} · {j['date']} · {j['time']}\n"
-        f"👥 Мест: {j['slots']}\n"
-        f"🏢 {j['employer']}\n"
-    )
-
-
-# ---------------------------------------------------------------------------
-# Хендлеры
-# ---------------------------------------------------------------------------
-
-@bot.message_handler(commands=["start", "menu"])
-def cmd_start(message: types.Message):
-    chat_id = message.chat.id
-    s = session(chat_id)
-    s["view"] = "start"
+# ---------- 5. Команды бота ----------
+@bot.message_handler(commands=["start"])
+def cmd_start(msg):
     bot.send_message(
-        chat_id,
-        "Привет! Это демо-бот <b>Подработка.МСК</b>.\n\n"
-        "Здесь всё работает в режиме имитации: смены, отклики и статусы — "
-        "демонстрационные данные без реальной базы.\n\n"
-        "Выберите, кем вы заходите:",
-        reply_markup=kb_main(),
+        msg.chat.id,
+        "Привет, {user}! Это демо-бот Подработка.МСК.\n\n"
+        "Здесь всё работает в режиме имитации: смены, отклики, кандидаты и чаты — "
+        "демонстрационные данные, реальной базы нет.\n\n"
+        "👷 Исполнитель: находит смену, откликается, следит за статусом.\n"
+        "🏢 Работодатель: публикует смену, смотрит кандидатов, принимает решение.\n\n"
+        "Выбери раздел кнопками внизу 👇",
+        reply_markup=chat_keyboard(),
     )
-
-
-# Явные command-хендлеры, чтобы Bot-Control видел прикрепление клавиатур
-@bot.message_handler(commands=["jobs"])
-def cmd_jobs(message: types.Message):
-    bot.send_message(
-        message.chat.id,
-        "🔍 <b>Доступные смены (демо)</b>\nВыберите смену для подробностей:",
-        reply_markup=kb_jobs_list(),
-    )
-
-
-@bot.message_handler(commands=["applications"])
-def cmd_applications(message: types.Message):
-    text_out = "📝 <b>Мои отклики (демо)</b>\n\n"
-    for a in DEMO_MY_APPLICATIONS:
-        text_out += (
-            f"#{a['id']} {STATUS_LABELS[a['status']]} — {a['job_title']}\n"
-            f"  🗓 {a['job_date']}, {a['job_time']} · {money(a['job_pay'])}\n"
-            f"  🏢 {a['employer']}\n\n"
-        )
-    bot.send_message(message.chat.id, text_out, reply_markup=kb_applications())
-
-
-@bot.message_handler(commands=["myjobs"])
-def cmd_myjobs(message: types.Message):
-    text_out = "📦 <b>Мои смены (демо)</b>\n\n"
-    for j in DEMO_MY_JOBS:
-        text_out += (
-            f"• #{j['id']} {j['title']} — {money(j['pay'])} · {j['date']}\n"
-            f"  {JOB_STATUS_LABELS[j['status']]} · откликов: {j['applications']} (в ожидании: {j['pending']})\n\n"
-        )
-    bot.send_message(message.chat.id, text_out, reply_markup=kb_my_jobs())
-
-
-@bot.message_handler(commands=["candidates"])
-def cmd_candidates(message: types.Message):
-    bot.send_message(
-        message.chat.id,
-        "👥 <b>Кандидаты (демо)</b>\n\n"
-        "На смену «Грузчик на склад Wildberries» откликнулся:\n"
-        "• #7 — Алексей Demo — ⏳ Ожидает решения\n\n"
-        "Выберите действие:",
-        reply_markup=kb_candidates(101),
-    )
-
-
-@bot.message_handler(commands=["jobdetail"])
-def cmd_jobdetail(message: types.Message):
-    j = DEMO_JOBS[0]
-    bot.send_message(
-        message.chat.id,
-        job_text(j) + "\nНажмите «Откликнуться», чтобы оставить заявку (имитация).",
-        reply_markup=kb_job_detail(j["id"], has_applied=False),
-    )
-
-
-@bot.message_handler(commands=["appdetail"])
-def cmd_appdetail(message: types.Message):
-    a = DEMO_MY_APPLICATIONS[0]
-    bot.send_message(
-        message.chat.id,
-        f"<b>Отклик #{a['id']}</b> — {STATUS_LABELS[a['status']]}\n\n"
-        f"💼 {a['job_title']}\n"
-        f"🗓 {a['job_date']}, {a['job_time']} · {money(a['job_pay'])}\n"
-        f"🏢 {a['employer']}\n\n"
-        f"(в демо-режиме статус не меняется)",
-        reply_markup=kb_app_detail(a["id"], a["status"]),
-    )
-
-
-@bot.message_handler(commands=["примеры"])
-def cmd_examples(message: types.Message):
-    """Показывает примеры работы каждой кнопки (демо-гид)."""
-    examples = (
-        "📖 <b>Примеры работы кнопок (демо-гид)</b>\n\n"
-        "<b>🔍 Найти смену</b> → открывает список доступных смен с категориями, оплатой, метро.\n"
-        "Нажмите на смену → откроется карточка с подробностями и кнопкой «Откликнуться».\n\n"
-        "<b>📅 Сегодня / 📅 Завтра</b> → показывает только смены на выбранную дату.\n\n"
-        "<b>⭐ Избранное</b> → сохранённые смены (в демо пусто).\n\n"
-        "<b>📝 Мои отклики</b> → список ваших откликов со статусами:\n"
-        "• #7 — Курьер доставки еды — ⏳ Ожидает решения\n"
-        "• #5 — Промоутер в ТЦ — ✅ Принят\n\n"
-        "<b>📦 Мои смены</b> (работодателю) → ваши смены со статусом:\n"
-        "• #101 — Грузчик на склад — 🟢 Активна · откликов: 2\n"
-        "• #103 — Официант в кафе — ⏸ Пауза\n\n"
-        "<b>👥 Кандидаты</b> → откликнувшиеся на вашу смену с кнопками ✅ Принять / ❌ Отклонить.\n\n"
-        "<b>💬 Чаты</b> → демо-диалог с работодателем (отправка имитируется).\n\n"
-        "<b>👤 Профиль</b> → ваши данные, рейтинг, закрытые смены, заработок.\n\n"
-        "<b>💰 Тарифы</b> → тарифы исполнителя и работодателя.\n\n"
-        "<b>❓ Помощь</b> → общая справка по боту.\n\n"
-        "<b>🔗 Привязать аккаунт / 📝 Регистрация</b> → в демо уже активен аккаунт Алексей Demo.\n"
-    )
-    bot.send_message(message.chat.id, examples, reply_markup=kb_main(session(message.chat.id).get("role")))
-
-
-@bot.message_handler(commands=["myjobdetail"])
-def cmd_myjobdetail(message: types.Message):
-    j = DEMO_MY_JOBS[0]
-    bot.send_message(
-        message.chat.id,
-        f"<b>Смена #{j['id']}</b> — {j['title']}\n"
-        f"💰 {money(j['pay'])} · 📍 {j['metro']} · 🗓 {j['date']}\n"
-        f"Статус: {JOB_STATUS_LABELS[j['status']]}\n"
-        f"Откликов: {j['applications']} (в ожидании: {j['pending']})\n",
-        reply_markup=kb_my_job_detail(j["id"], j["status"]),
-    )
-
 
 @bot.message_handler(commands=["help"])
-def cmd_help(message: types.Message):
+def cmd_help(msg):
     bot.send_message(
-        message.chat.id,
-        "❓ <b>Помощь (демо-режим)</b>\n\n"
-        "🔍 Найти смену — просмотр демонстрационных смен\n"
-        "📝 Мои отклики — имитация откликов\n"
-        "📦 Мои смены (работодателю) — управление сменами и кандидатами\n"
-        "👤 Профиль — демо-профиль\n"
-        "\nВсе данные выдуманы, никакие реальные действия не выполняются.",
+        msg.chat.id,
+        "❓ Помощь по демо-боту\n\n"
+        "Команды:\n"
+        "/start — главное меню\n"
+        "/help — эта справка\n"
+        "/examples — примеры работы каждой кнопки\n\n"
+        "Разделы внизу:\n"
+        "🔍 Найти смену — 5 демо-смен с карточками\n"
+        "✋ Откликнуться — отклик на выбранную смену\n"
+        "📝 Мои отклики — статусы ваших заявок\n"
+        "📦 Мои смены — смены работодателя\n"
+        "👥 Кандидаты — принять или отклонить\n"
+        "💬 Чаты — переписка\n"
+        "👤 Профиль — данные демо-аккаунта\n"
+        "💰 Тарифы — условия подписки\n"
+        "❓ Помощь — этот текст\n\n"
+        "Все данные выдуманы, заявки никуда не уходят.",
     )
 
-
-@bot.message_handler(func=lambda m: True, content_types=["text"])
-def handle_text(message: types.Message):
-    chat_id = message.chat.id
-    text = (message.text or "").strip()
-    s = session(chat_id)
-
-    # Выбор роли при старте
-    if s["view"] == "start":
-        if text in ("👷 Исполнитель", "Я ищу подработку", "worker", "исполнитель"):
-            s["role"] = "worker"
-            s["view"] = "menu"
-            bot.send_message(
-                chat_id,
-                "Режим: <b>👷 Исполнитель</b>\nВыберите действие:",
-                reply_markup=kb_main("worker"),
-            )
-            return
-        if text in ("🏢 Работодатель", "Я нанимаю", "employer", "работодатель"):
-            s["role"] = "employer"
-            s["view"] = "menu"
-            bot.send_message(
-                chat_id,
-                "Режим: <b>🏢 Работодатель</b>\nВыберите действие:",
-                reply_markup=kb_main("employer"),
-            )
-            return
-        # Покажем выбор roli кнопками
-        role_kb = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
-        role_kb.row("👷 Я ищу подработку (исполнитель)")
-        role_kb.row("🏢 Я нанимаю (работодатель)")
-        bot.send_message(
-            chat_id,
-            "Кем вы будете на платформе?",
-            reply_markup=role_kb,
-        )
-        return
-
-    role = s.get("role")
-
-    if text == "🔍 Найти смену":
-        bot.send_message(
-            chat_id,
-            "🔍 <b>Доступные смены (демо)</b>\nВыберите смену для подробностей:",
-            reply_markup=kb_jobs_list(),
-        )
-        return
-
-    if text == "📅 Сегодня":
-        todays = [j for j in DEMO_JOBS if j["date"] == TODAY]
-        if not todays:
-            bot.send_message(chat_id, "На сегодня смен не найдено (демо).")
-            return
-        text_out = "📅 <b>Смены на сегодня</b>\n\n"
-        for j in todays:
-            text_out += job_text(j) + "\n"
-        bot.send_message(chat_id, text_out, reply_markup=kb_jobs_list())
-        return
-
-    if text == "📅 Завтра":
-        tomorrows = [j for j in DEMO_JOBS if j["date"] == TOMORROW]
-        text_out = "📅 <b>Смены на завтра</b>\n\n"
-        for j in tomorrows:
-            text_out += job_text(j) + "\n"
-        bot.send_message(chat_id, text_out, reply_markup=kb_jobs_list())
-        return
-
-    if text == "⭐ Избранное":
-        bot.send_message(
-            chat_id,
-            "⭐ <b>Избранное (демо)</b>\n\n"
-            "Пока пусто. В реальном боте здесь сохраняются понравившиеся смены.",
-            reply_markup=kb_main(role),
-        )
-        return
-
-    if text == "📝 Мои отклики":
-        s["view"] = "applications"
-        text_out = "📝 <b>Мои отклики (демо)</b>\n\n"
-        for a in DEMO_MY_APPLICATIONS:
-            text_out += (
-                f"#{a['id']} {STATUS_LABELS[a['status']]} — {a['job_title']}\n"
-                f"  🗓 {a['job_date']}, {a['job_time']} · {money(a['job_pay'])}\n"
-                f"  🏢 {a['employer']}\n\n"
-            )
-        bot.send_message(chat_id, text_out, reply_markup=kb_applications())
-        return
-
-    if text == "📦 Мои смены":
-        if role != "employer":
-            bot.send_message(chat_id, "Этот раздел для работодателей. Смените роль через /start.")
-            return
-        s["view"] = "myjobs"
-        text_out = "📦 <b>Мои смены (демо)</b>\n\n"
-        for j in DEMO_MY_JOBS:
-            text_out += (
-                f"• #{j['id']} {j['title']} — {money(j['pay'])} · {j['date']}\n"
-                f"  {JOB_STATUS_LABELS[j['status']]} · откликов: {j['applications']} (в ожидании: {j['pending']})\n\n"
-            )
-        bot.send_message(chat_id, text_out, reply_markup=kb_my_jobs())
-        return
-
-    if text == "👥 Кандидаты":
-        if role != "employer":
-            bot.send_message(chat_id, "Этот раздел для работодателей.")
-            return
-        bot.send_message(
-            chat_id,
-            "👥 <b>Кандидаты (демо)</b>\n\n"
-            "На смену «Грузчик на склад Wildberries» откликнулся:\n"
-            "• #7 — Алексей Demo — ⏳ Ожидает решения\n\n"
-            "Выберите действие:",
-            reply_markup=kb_candidates(101),
-        )
-        return
-
-    if text == "💬 Чаты":
-        bot.send_message(
-            chat_id,
-            "💬 <b>Чаты (демо)</b>\n\n"
-            "Диалог с ИП Смирнов А.В. по смене «Курьер доставки еды»:\n"
-            "Вы: Добрый день, я готов выйти на смену!\n"
-            "Работодатель: Отлично, ждём вас в 12:00.\n"
-            "(в демо-режиме отправка сообщений имитируется)",
-            reply_markup=kb_main(role),
-        )
-        return
-
-    if text == "👤 Профиль":
-        role_label = {"worker": "👷 Исполнитель", "employer": "🏢 Работодатель"}.get(role, "—")
-        bot.send_message(
-            chat_id,
-            "👤 <b>Профиль (демо)</b>\n\n"
-            f"Имя: Алексей Demo\n"
-            f"Роль: {role_label or 'не выбрана'}\n"
-            f"Email: alexey.demo@example.com\n"
-            f"Рейтинг: 4.9 ★ (12 отзывов)\n"
-            f"Закрытых смен: 8\n"
-            f"Заработано: 28 500 ₽\n"
-            "\n(все данные выдуманы)",
-            reply_markup=kb_main(role),
-        )
-        return
-
-    if text == "💰 Тарифы":
-        bot.send_message(
-            chat_id,
-            "💰 <b>Тарифы (демо)</b>\n\n"
-            "👷 Исполнителю:\n"
-            "• Бесплатный — до 5 откликов/день\n"
-            "• Про (299 ₽/мес) — безлимит откликов\n"
-            "\n🏢 Работодателю:\n"
-            "• Старт — до 5 активных смен\n"
-            "• Бизнес — без лимита\n"
-            "\n(демо-данные, оплата не привязана)",
-            reply_markup=kb_main(role),
-        )
-        return
-
-    if text == "❓ Помощь":
-        cmd_help(message)
-        return
-
-    if text == "🔗 Привязать аккаунт":
-        bot.send_message(
-            chat_id,
-            "🔗 <b>Привязка (демо)</b>\n\n"
-            "В реальном боте здесь привязывается Telegram к аккаунту на сайте. "
-            "В демо-режиме это имитируется — вы уже вошли как Алексей Demo.",
-            reply_markup=kb_main(role),
-        )
-        return
-
-    if text == "📝 Регистрация":
-        bot.send_message(
-            chat_id,
-            "📝 <b>Регистрация (демо)</b>\n\n"
-            "Демо-аккаунт уже активен: Алексей Demo (a­lexey.demo@example.com). "
-            "Реальная регистрация не требуется.",
-            reply_markup=kb_main(role),
-        )
-        return
-
+@bot.message_handler(commands=["examples"])
+def cmd_examples(msg):
     bot.send_message(
-        chat_id,
-        "Выберите кнопку в меню ниже или /start — перезапустить демо.",
-        reply_markup=kb_main(role),
+        msg.chat.id,
+        "📖 Примеры работы бота (демо-гид)\n\n"
+        "👷 «Я ищу подработку (исполнитель)» — режим исполнителя.\n\n"
+        "🔍 «Найти смену» — список из 5 смен. Нажми на смену в меню под сообщением — "
+        "карточка откроется в этом же сообщении, а меню останется под ней: "
+        "так можно листать смены одну за другой.\n\n"
+        "✋ «Откликнуться» — выбери смену, отклик уйдёт работодателю. "
+        "Статус станет «⏳ Ожидает решения».\n\n"
+        "📝 «Мои отклики» — 2 отклика: #7 ожидает решения, #5 принят. "
+        "Нажми на отклик — откроются подробности и контакт работодателя.\n\n"
+        "📦 «Мои смены» — смены работодателя: #101 активна, #103 на паузе. "
+        "Нажми на смену — карточка с откликами и статусом.\n\n"
+        "👥 «Кандидаты» — на смену #101 откликнулись двое. Кнопки «Принять» "
+        "и «Отклонить» показывают результат решения.\n\n"
+        "💬 «Чаты» — переписка с работодателями.\n\n"
+        "👤 «Профиль» — демо-профиль, рейтинг, заработок.\n\n"
+        "💰 «Тарифы» — условия для исполнителя и работодателя.\n\n"
+        "❓ «Помощь» — команды и разделы бота.",
     )
 
+# ---------- 6. Кнопки нижней клавиатуры (по правилу на каждую) ----------
+@bot.message_handler(func=lambda m: m.text == "Я ищу подработку (исполнитель)")
+def btn_role_worker(msg):
+    bot.send_message(
+        msg.chat.id,
+        "Режим: 👷 Исполнитель\n\n"
+        "Что доступно:\n"
+        "🔍 «Найти смену» — 5 смен в Москве с оплатой от 2900 до 4500 ₽.\n"
+        "✋ «Откликнуться» — заявка работодателю в один тап.\n"
+        "📝 «Мои отклики» — статусы заявок и контакты.\n"
+        "💬 «Чаты» — переписка с работодателем.\n\n"
+        "Демо-профиль: Алексей Demo · рейтинг 4.9 ★ · 8 закрытых смен.",
+    )
 
-# ---------------------------------------------------------------------------
-# Callback-запросы (inline-кнопки)
-# ---------------------------------------------------------------------------
+@bot.message_handler(func=lambda m: m.text == "Я нанимаю (работодатель)")
+def btn_role_employer(msg):
+    bot.send_message(
+        msg.chat.id,
+        "Режим: 🏢 Работодатель\n\n"
+        "Что доступно:\n"
+        "📦 «Мои смены» — активные и приостановленные смены.\n"
+        "👥 «Кандидаты» — отклики с решением «Принять» или «Отклонить».\n"
+        "💬 «Чаты» — переписка с исполнителями.\n"
+        "💰 «Тарифы» — тарифы для работодателя.\n\n"
+        "Демо-аккаунт: ООО «Логистика-М» · 2 активные смены · 2 отклика в ожидании.",
+    )
 
-@bot.callback_query_handler(func=lambda call: True)
-def handle_callback(call: types.CallbackQuery):
-    chat_id = call.message.chat.id
-    data = call.data or ""
-    s = session(chat_id)
-    role = s.get("role")
+@bot.message_handler(func=lambda m: m.text == "Найти смену")
+def btn_find_jobs(msg):
+    bot.send_message(
+        msg.chat.id,
+        "🔍 Смены в Москве — демо-подборка на 24–26 ноября\n\n"
+        "1. 🏬 Грузчик на склад Wildberries — 4500 ₽\n"
+        "   Автозаводская · 25.11 · 09:00–18:00 · мест: 2 из 5\n\n"
+        "2. 🚴 Курьер доставки еды — 3800 ₽\n"
+        "   Китай-город · 24.11 · 12:00–21:00 · мест: 1 из 3\n\n"
+        "3. 🍽 Официант в кафе — 3200 ₽\n"
+        "   Тверская · 26.11 · 17:00–23:00 · мест: 4 из 6\n\n"
+        "4. 🎤 Промоутер в ТЦ — 2900 ₽\n"
+        "   ВДНХ · 24.11 · 10:00–16:00 · мест: 0 из 2\n\n"
+        "5. 🧹 Уборщик помещений — 3400 ₽\n"
+        "   Парк Победы · 25.11 · 08:00–12:00 · мест: 1 из 3\n\n"
+        "Нажми на смену ниже — карточка появится в этом же сообщении 👇",
+        reply_markup=jobs_menu(),
+    )
 
-    bot.answer_callback_query(call.id)
+@bot.message_handler(func=lambda m: m.text == "Откликнуться")
+def btn_apply(msg):
+    bot.send_message(
+        msg.chat.id,
+        "✋ Отклик на смену\n\n"
+        "Выбери смену, на которую хочешь откликнуться. В демо-режиме заявка "
+        "никуда не уходит, но бот покажет ровно то, что увидел бы исполнитель.\n\n"
+        "Свободные места есть на четырёх сменах из пяти 👇",
+        reply_markup=apply_menu(),
+    )
 
-    if data == "noop":
-        return
+@bot.message_handler(func=lambda m: m.text == "Мои отклики")
+def btn_my_applications(msg):
+    bot.send_message(
+        msg.chat.id,
+        "📝 Мои отклики — 2\n\n"
+        "#7 — Курьер доставки еды\n"
+        "⏳ Ожидает решения · 3800 ₽ · 24.11.2026, 12:00–21:00\n\n"
+        "#5 — Промоутер в ТЦ\n"
+        "✅ Принят · 2900 ₽ · 26.11.2026, 10:00–16:00\n\n"
+        "Нажми на отклик ниже, чтобы открыть подробности 👇",
+        reply_markup=applications_menu(),
+    )
 
-    if data == "jobs:refresh":
-        bot.edit_message_text(
-            "🔍 <b>Доступные смены (демо)</b>\nВыберите смену для подробностей:",
-            chat_id,
-            call.message.message_id,
-            reply_markup=kb_jobs_list(),
-        )
-        return
+@bot.message_handler(func=lambda m: m.text == "Мои смены")
+def btn_my_jobs(msg):
+    bot.send_message(
+        msg.chat.id,
+        "📦 Мои смены (работодатель)\n\n"
+        "#101 — Грузчик на склад Wildberries\n"
+        "🟢 Активна · 4500 ₽ · 25.11.2026 · 09:00–18:00\n"
+        "Откликов: 2 (в ожидании: 2)\n\n"
+        "#103 — Официант в кафе\n"
+        "⏸ Пауза · 3200 ₽ · 26.11.2026 · 17:00–23:00\n"
+        "Откликов: 0\n\n"
+        "Нажми на смену ниже 👇",
+        reply_markup=my_jobs_menu(),
+    )
 
-    if data == "jobs:list":
-        bot.edit_message_text(
-            "🔍 <b>Доступные смены (демо)</b>\nВыберите смену для подробностей:",
-            chat_id,
-            call.message.message_id,
-            reply_markup=kb_jobs_list(),
-        )
-        return
+@bot.message_handler(func=lambda m: m.text == "Кандидаты")
+def btn_candidates(msg):
+    bot.send_message(
+        msg.chat.id,
+        "👥 Кандидаты на смену #101\n"
+        "Грузчик на склад Wildberries · 25.11.2026 · 4500 ₽\n\n"
+        "1. #12 Алексей Demo — 4.9 ★\n"
+        "   8 закрытых смен · опыт склада 3 месяца · ⏳ Ожидает решения\n\n"
+        "2. #13 Мария Д. — 4.7 ★\n"
+        "   5 закрытых смен · медкнижка есть · ⏳ Ожидает решения\n\n"
+        "Выбери решение кнопками ниже 👇",
+        reply_markup=candidates_menu(),
+    )
 
-    if data.startswith("job:"):
-        job_id = int(data.split(":")[1])
-        job = next((j for j in DEMO_JOBS if j["id"] == job_id), None)
-        if not job:
-            bot.send_message(chat_id, "Смена не найдена (демо).")
-            return
-        bot.edit_message_text(
-            job_text(job) + "\nНажмите «Откликнуться», чтобы оставить заявку (имитация).",
-            chat_id,
-            call.message.message_id,
-            reply_markup=kb_job_detail(job_id, has_applied=False),
-        )
-        return
+@bot.message_handler(func=lambda m: m.text == "Чаты")
+def btn_chats(msg):
+    bot.send_message(
+        msg.chat.id,
+        "💬 Чаты — демо\n\n"
+        "ИП Смирнов А.В. · смена «Курьер доставки еды»\n"
+        "Вы: Добрый день! Готов выйти на смену 24 ноября.\n"
+        "Работодатель: Отлично, ждём в 12:00 у метро Китай-город.\n\n"
+        "Кафе «Уют» · смена «Официант»\n"
+        "Вы: Здравствуйте, подскажите форму одежды.\n"
+        "Работодатель: Чёрный верх и брюки, фартук выдаём на месте.\n\n"
+        "В демо-режиме отправка сообщений имитируется.",
+    )
 
-    if data.startswith("apply:"):
-        job_id = int(data.split(":")[1])
-        job = next((j for j in DEMO_JOBS if j["id"] == job_id), None)
-        bot.edit_message_text(
-            f"✅ <b>Отклик отправлен (имитация)</b>\n\n"
-            f"Вы откликнулись на «{job['title'] if job else 'смену'}» "
-            f"({money(job['pay']) if job else ''}).\n"
-            f"Работодатель получит уведомление и примет решение.\n\n"
-            f"Статус отклика: ⏳ Ожидает решения",
-            chat_id,
-            call.message.message_id,
-            reply_markup=kb_job_detail(job_id, has_applied=True),
-        )
-        return
+@bot.message_handler(func=lambda m: m.text == "Профиль")
+def btn_profile(msg):
+    bot.send_message(
+        msg.chat.id,
+        "👤 Профиль — демо\n\n"
+        "Имя: Алексей Demo\n"
+        "Роль: 👷 Исполнитель и 🏢 Работодатель\n"
+        "Email: alexey.demo@example.com\n"
+        "Рейтинг: 4.9 ★ (12 отзывов)\n"
+        "Закрытых смен: 8\n"
+        "Заработано: 28 500 ₽\n\n"
+        "Все данные выдуманы — это имитация.",
+    )
 
-    if data.startswith("fav:"):
-        job_id = int(data.split(":")[1])
-        bot.answer_callback_query(call.id, "Добавлено в избранное (демо) ⭐", show_alert=False)
-        return
+@bot.message_handler(func=lambda m: m.text == "Тарифы")
+def btn_tariffs(msg):
+    bot.send_message(
+        msg.chat.id,
+        "💰 Тарифы — демо\n\n"
+        "👷 Исполнителю:\n"
+        "• Бесплатный — до 5 откликов в день\n"
+        "• Про — 299 ₽/мес, отклики без лимита и приоритет в подборке\n\n"
+        "🏢 Работодателю:\n"
+        "• Старт — до 5 активных смен\n"
+        "• Бизнес — без лимита, кандидаты в один экран\n\n"
+        "Оплата в демо не подключена.",
+    )
 
-    if data == "worker:applications":
-        text_out = "📝 <b>Мои отклики (демо)</b>\n\n"
-        for a in DEMO_MY_APPLICATIONS:
-            text_out += (
-                f"#{a['id']} {STATUS_LABELS[a['status']]} — {a['job_title']}\n"
-                f"  🗓 {a['job_date']}, {a['job_time']} · {money(a['job_pay'])}\n"
-                f"  🏢 {a['employer']}\n\n"
-            )
-        bot.edit_message_text(text_out, chat_id, call.message.message_id, reply_markup=kb_applications())
-        return
+@bot.message_handler(func=lambda m: m.text == "Помощь")
+def btn_help_txt(msg):
+    bot.send_message(
+        msg.chat.id,
+        "❓ Помощь по демо-боту\n\n"
+        "🔍 Найти смену — 5 смен с карточками\n"
+        "✋ Откликнуться — заявка на смену\n"
+        "📝 Мои отклики — статусы заявок\n"
+        "📦 Мои смены — смены работодателя\n"
+        "👥 Кандидаты — принять или отклонить\n"
+        "💬 Чаты — переписка\n"
+        "👤 Профиль — демо-аккаунт\n"
+        "💰 Тарифы — условия подписки\n\n"
+        "Команды: /start · /help · /examples\n"
+        "Все данные выдуманы, реальной базы нет.",
+    )
 
-    if data.startswith("myapp:"):
-        app_id = int(data.split(":")[1])
-        app = next((a for a in DEMO_MY_APPLICATIONS if a["id"] == app_id), None)
-        if not app:
-            bot.send_message(chat_id, "Отклик не найден (демо).")
-            return
-        bot.edit_message_text(
-            f"<b>Отклик #{app['id']}</b> — {STATUS_LABELS[app['status']]}\n\n"
-            f"💼 {app['job_title']}\n"
-            f"🗓 {app['job_date']}, {app['job_time']} · {money(app['job_pay'])}\n"
-            f"🏢 {app['employer']}\n\n"
-            f"(в демо-режиме статус не меняется)",
-            chat_id,
-            call.message.message_id,
-            reply_markup=kb_app_detail(app_id, app["status"]),
-        )
-        return
+# ---------- 7. Inline-кнопки: карточки смен ----------
+@bot.callback_query_handler(func=lambda call: call.data == "job:101")
+def cb_job_101(call):
+    bot.answer_callback_query(call.id, "Грузчик на склад — 4500 ₽")
+    bot.edit_message_text(
+        "🏬 Грузчик на склад Wildberries ✅\n\n"
+        "💰 4500 ₽ за смену, оплата в день работы\n"
+        "📍 Автозаводская · 25.11.2026 · 09:00–18:00\n"
+        "👥 Свободно мест: 2 из 5\n"
+        "🏢 ООО «Логистика-М» · проверенный работодатель\n\n"
+        "📝 Разгрузка и погрузка товара на складе. Перчатки и жилет выдаём, "
+        "обувь — на нескользящей подошве.\n\n"
+        "📋 Требования: опыт от 3 месяцев, медкнижка не нужна\n\n"
+        "Хочешь эту смену — нажми «Откликнуться» в клавиатуре внизу.",
+        call.message.chat.id,
+        call.message.message_id,
+        reply_markup=jobs_menu(),
+    )
 
-    if data == "employer:myjobs":
-        text_out = "📦 <b>Мои смены (демо)</b>\n\n"
-        for j in DEMO_MY_JOBS:
-            text_out += (
-                f"• #{j['id']} {j['title']} — {money(j['pay'])} · {j['date']}\n"
-                f"  {JOB_STATUS_LABELS[j['status']]} · откликов: {j['applications']} (в ожидании: {j['pending']})\n\n"
-            )
-        bot.edit_message_text(text_out, chat_id, call.message.message_id, reply_markup=kb_my_jobs())
-        return
+@bot.callback_query_handler(func=lambda call: call.data == "job:102")
+def cb_job_102(call):
+    bot.answer_callback_query(call.id, "Курьер доставки еды — 3800 ₽")
+    bot.edit_message_text(
+        "🚴 Курьер доставки еды\n\n"
+        "💰 3800 ₽ за смену, оплата сразу после смены\n"
+        "📍 Китай-город · 24.11.2026 · 12:00–21:00\n"
+        "👥 Свободно мест: 1 из 3\n"
+        "🏢 ИП Смирнов А.В.\n\n"
+        "📝 Доставка заказов по центру Москвы. Самокат или велосипед "
+        "предоставляем, терминал выдаём на смену.\n\n"
+        "📋 Требования: смартфон с интернетом, паспорт, опыт не нужен\n\n"
+        "Хочешь эту смену — нажми «Откликнуться» в клавиатуре внизу.",
+        call.message.chat.id,
+        call.message.message_id,
+        reply_markup=jobs_menu(),
+    )
 
-    if data.startswith("myjob:"):
-        job_id = int(data.split(":")[1])
-        job = next((j for j in DEMO_MY_JOBS if j["id"] == job_id), None)
-        if not job:
-            bot.send_message(chat_id, "Смена не найдена (демо).")
-            return
-        bot.edit_message_text(
-            f"<b>Смена #{job['id']}</b> — {job['title']}\n"
-            f"💰 {money(job['pay'])} · 📍 {job['metro']} · 🗓 {job['date']}\n"
-            f"Статус: {JOB_STATUS_LABELS[job['status']]}\n"
-            f"Откликов: {job['applications']} (в ожидании: {job['pending']})\n",
-            chat_id,
-            call.message.message_id,
-            reply_markup=kb_my_job_detail(job_id, job["status"]),
-        )
-        return
+@bot.callback_query_handler(func=lambda call: call.data == "job:103")
+def cb_job_103(call):
+    bot.answer_callback_query(call.id, "Официант в кафе — 3200 ₽")
+    bot.edit_message_text(
+        "🍽 Официант в кафе ✅\n\n"
+        "💰 3200 ₽ за смену плюс чаевые\n"
+        "📍 Тверская · 26.11.2026 · 17:00–23:00\n"
+        "👥 Свободно мест: 4 из 6\n"
+        "🏢 Кафе «Уют» · проверенный работодатель\n\n"
+        "📝 Обслуживание гостей в уютном кафе на Тверской. Обучение на месте, "
+        "смена с наставником.\n\n"
+        "📋 Требования: коммуникабельность, чёрная одежда, медкнижка\n\n"
+        "Хочешь эту смену — нажми «Откликнуться» в клавиатуре внизу.",
+        call.message.chat.id,
+        call.message.message_id,
+        reply_markup=jobs_menu(),
+    )
 
-    if data.startswith("pausejob:"):
-        job_id = int(data.split(":")[1])
-        bot.answer_callback_query(call.id, "Набор приостановлен (демо) ⏸")
-        return
+@bot.callback_query_handler(func=lambda call: call.data == "job:104")
+def cb_job_104(call):
+    bot.answer_callback_query(call.id, "Промоутер в ТЦ — 2900 ₽")
+    bot.edit_message_text(
+        "🎤 Промоутер в ТЦ\n\n"
+        "💰 2900 ₽ за смену\n"
+        "📍 ВДНХ · 24.11.2026 · 10:00–16:00\n"
+        "👥 Свободно мест: 0 из 2 — места закончились\n"
+        "🏢 Агентство «Ярмарка»\n\n"
+        "📝 Раздача листовок и консультация гостей торгового центра. "
+        "Фирменную футболку выдаём на месте.\n\n"
+        "📋 Требования: активная позиция, чистая речь, опыт не нужен\n\n"
+        "Мест нет, но отклик попадёт в лист ожидания: нажми «Откликнуться».",
+        call.message.chat.id,
+        call.message.message_id,
+        reply_markup=jobs_menu(),
+    )
 
-    if data.startswith("resumejob:"):
-        job_id = int(data.split(":")[1])
-        bot.answer_callback_query(call.id, "Набор возобновлён (демо) ▶️")
-        return
+@bot.callback_query_handler(func=lambda call: call.data == "job:105")
+def cb_job_105(call):
+    bot.answer_callback_query(call.id, "Уборщик помещений — 3400 ₽")
+    bot.edit_message_text(
+        "🧹 Уборщик помещений ✅\n\n"
+        "💰 3400 ₽ за смену\n"
+        "📍 Парк Победы · 25.11.2026 · 08:00–12:00\n"
+        "👥 Свободно мест: 1 из 3\n"
+        "🏢 ООО «Чистый дом» · проверенный работодатель\n\n"
+        "📝 Поддержание чистоты в офисном центре. Инструмент и моющие "
+        "средства выдаются на месте.\n\n"
+        "📋 Требования: медкнижка, опыт уборки от 6 месяцев, пунктуальность\n\n"
+        "Хочешь эту смену — нажми «Откликнуться» в клавиатуре внизу.",
+        call.message.chat.id,
+        call.message.message_id,
+        reply_markup=jobs_menu(),
+    )
 
-    if data.startswith("closejob:"):
-        job_id = int(data.split(":")[1])
-        bot.answer_callback_query(call.id, "Смена закрыта (демо) ⛔")
-        return
+# ---------- 8. Inline-кнопки: отклики ----------
+@bot.callback_query_handler(func=lambda call: call.data == "apply:101")
+def cb_apply_101(call):
+    bot.answer_callback_query(call.id, "Отклик отправлен ✅")
+    bot.edit_message_text(
+        "✅ Отклик отправлен\n\n"
+        "🏬 Грузчик на склад Wildberries\n"
+        "💰 4500 ₽ · 📍 Автозаводская\n"
+        "🗓 25.11.2026 · 09:00–18:00\n"
+        "🏢 ООО «Логистика-М»\n\n"
+        "Статус: ⏳ Ожидает решения\n\n"
+        "Работодатель увидит отклик в разделе «Кандидаты» и напишет в чат. "
+        "Следи за статусом в «Мои отклики».",
+        call.message.chat.id,
+        call.message.message_id,
+        reply_markup=apply_menu(),
+    )
 
-    if data.startswith("candidates:"):
-        job_id = int(data.split(":")[1])
-        bot.edit_message_text(
-            "👥 <b>Кандидаты (демо)</b>\n\n"
-            "На смену «Грузчик на склад Wildberries» откликнулся:\n"
-            "• #7 — Алексей Demo — ⏳ Ожидает решения\n\n"
-            "Выберите действие:",
-            chat_id,
-            call.message.message_id,
-            reply_markup=kb_candidates(job_id),
-        )
-        return
+@bot.callback_query_handler(func=lambda call: call.data == "apply:102")
+def cb_apply_102(call):
+    bot.answer_callback_query(call.id, "Отклик отправлен ✅")
+    bot.edit_message_text(
+        "✅ Отклик отправлен\n\n"
+        "🚴 Курьер доставки еды\n"
+        "💰 3800 ₽ · 📍 Китай-город\n"
+        "🗓 24.11.2026 · 12:00–21:00\n"
+        "🏢 ИП Смирнов А.В.\n\n"
+        "Статус: ⏳ Ожидает решения\n\n"
+        "Это смена на сегодня — работодатель обычно отвечает в течение часа. "
+        "Следи за статусом в «Мои отклики».",
+        call.message.chat.id,
+        call.message.message_id,
+        reply_markup=apply_menu(),
+    )
 
-    if data.startswith("accept:"):
-        parts = data.split(":")
-        app_id = int(parts[1])
-        bot.answer_callback_query(call.id, f"Кандидат #{app_id} принят (демо) ✅")
-        return
+@bot.callback_query_handler(func=lambda call: call.data == "apply:103")
+def cb_apply_103(call):
+    bot.answer_callback_query(call.id, "Отклик отправлен ✅")
+    bot.edit_message_text(
+        "✅ Отклик отправлен\n\n"
+        "🍽 Официант в кафе\n"
+        "💰 3200 ₽ · 📍 Тверская\n"
+        "🗓 26.11.2026 · 17:00–23:00\n"
+        "🏢 Кафе «Уют»\n\n"
+        "Статус: ⏳ Ожидает решения\n\n"
+        "Не забудь про чёрную одежду — это указано в требованиях смены.",
+        call.message.chat.id,
+        call.message.message_id,
+        reply_markup=apply_menu(),
+    )
 
-    if data.startswith("reject:"):
-        parts = data.split(":")
-        app_id = int(parts[1])
-        bot.answer_callback_query(call.id, f"Кандидат #{app_id} отклонён (демо) ❌")
-        return
+@bot.callback_query_handler(func=lambda call: call.data == "apply:104")
+def cb_apply_104(call):
+    bot.answer_callback_query(call.id, "Мест нет — лист ожидания")
+    bot.edit_message_text(
+        "⛔ Свободных мест не осталось\n\n"
+        "🎤 Промоутер в ТЦ\n"
+        "💰 2900 ₽ · 📍 ВДНХ · 24.11.2026\n"
+        "👥 Занято: 2 из 2\n\n"
+        "Ты в листе ожидания: если кто-то откажется, работодатель напишет "
+        "тебе первому.\n\n"
+        "Пока можно посмотреть другие смены 👇",
+        call.message.chat.id,
+        call.message.message_id,
+        reply_markup=apply_menu(),
+    )
 
-    if data.startswith("cancel:"):
-        app_id = int(data.split(":")[1])
-        bot.answer_callback_query(call.id, f"Отклик #{app_id} отменён (демо) 🚫")
-        return
+@bot.callback_query_handler(func=lambda call: call.data == "apply:105")
+def cb_apply_105(call):
+    bot.answer_callback_query(call.id, "Отклик отправлен ✅")
+    bot.edit_message_text(
+        "✅ Отклик отправлен\n\n"
+        "🧹 Уборщик помещений\n"
+        "💰 3400 ₽ · 📍 Парк Победы\n"
+        "🗓 25.11.2026 · 08:00–12:00\n"
+        "🏢 ООО «Чистый дом»\n\n"
+        "Статус: ⏳ Ожидает решения\n\n"
+        "Медкнижка обязательна — возьми её на смену.",
+        call.message.chat.id,
+        call.message.message_id,
+        reply_markup=apply_menu(),
+    )
 
-    if data.startswith("chat:"):
-        app_id = int(data.split(":")[1])
-        bot.send_message(
-            chat_id,
-            f"💬 <b>Чат по отклику #{app_id} (демо)</b>\n\n"
-            "Вы: Добрый день, я готов выйти на смену!\n"
-            "Работодатель: Отлично, ждём вас.\n"
-            "(отправка сообщений имитируется)",
-        )
-        return
+# ---------- 9. Inline-кнопки: мои отклики ----------
+@bot.callback_query_handler(func=lambda call: call.data == "app:7")
+def cb_app_7(call):
+    bot.answer_callback_query(call.id, "Отклик #7")
+    bot.edit_message_text(
+        "📝 Отклик #7 — ⏳ Ожидает решения\n\n"
+        "🚴 Курьер доставки еды\n"
+        "💰 3800 ₽ · 📍 Китай-город\n"
+        "🗓 24.11.2026 · 12:00–21:00\n"
+        "🏢 ИП Смирнов А.В.\n"
+        "📞 +7 (999) 123-45-67\n\n"
+        "Что дальше: работодатель смотрит отклики до 11:00, "
+        "после этого статус сменится на «Принят» или «Отказ».\n\n"
+        "Статус в демо не меняется — это имитация.",
+        call.message.chat.id,
+        call.message.message_id,
+        reply_markup=applications_menu(),
+    )
 
+@bot.callback_query_handler(func=lambda call: call.data == "app:5")
+def cb_app_5(call):
+    bot.answer_callback_query(call.id, "Отклик #5")
+    bot.edit_message_text(
+        "📝 Отклик #5 — ✅ Принят\n\n"
+        "🎤 Промоутер в ТЦ\n"
+        "💰 2900 ₽ · 📍 ВДНХ\n"
+        "🗓 26.11.2026 · 10:00–16:00\n"
+        "🏢 Агентство «Ярмарка»\n"
+        "📞 +7 (999) 987-65-43\n\n"
+        "Что дальше: приди за 15 минут до начала, вход со стороны "
+        "центрального атриума. Фирменную футболку выдадут на месте.\n\n"
+        "Контакт и адрес сохранены в чате.",
+        call.message.chat.id,
+        call.message.message_id,
+        reply_markup=applications_menu(),
+    )
 
-def main():
-    print("Имитационный бот Подработка.МСК запущен.")
-    print("Режим: только демонстрация, без базы данных.")
-    bot.infinity_polling(timeout=30, long_polling_timeout=25)
+# ---------- 10. Inline-кнопки: смены работодателя ----------
+@bot.callback_query_handler(func=lambda call: call.data == "myjob:101")
+def cb_myjob_101(call):
+    bot.answer_callback_query(call.id, "Смена #101")
+    bot.edit_message_text(
+        "📦 Смена #101 — 🟢 Активна\n\n"
+        "🏬 Грузчик на склад Wildberries\n"
+        "💰 4500 ₽ · 📍 Автозаводская\n"
+        "🗓 25.11.2026 · 09:00–18:00 · мест: 2 из 5\n\n"
+        "👥 Откликов: 2 (в ожидании: 2)\n"
+        "• #12 Алексей Demo — 4.9 ★\n"
+        "• #13 Мария Д. — 4.7 ★\n\n"
+        "Решения по кандидатам — в разделе «Кандидаты».",
+        call.message.chat.id,
+        call.message.message_id,
+        reply_markup=my_jobs_menu(),
+    )
 
+@bot.callback_query_handler(func=lambda call: call.data == "myjob:103")
+def cb_myjob_103(call):
+    bot.answer_callback_query(call.id, "Смена #103")
+    bot.edit_message_text(
+        "📦 Смена #103 — ⏸ Пауза\n\n"
+        "🍽 Официант в кафе\n"
+        "💰 3200 ₽ · 📍 Тверская\n"
+        "🗓 26.11.2026 · 17:00–23:00 · мест: 4 из 6\n\n"
+        "Смена скрыта из подборки: новые отклики не приходят, "
+        "уже собранные остаются.\n\n"
+        "В демо-режиме возобновление не меняет данные — это имитация.",
+        call.message.chat.id,
+        call.message.message_id,
+        reply_markup=my_jobs_menu(),
+    )
 
-if __name__ == "__main__":
-    main()
+# ---------- 11. Inline-кнопки: кандидаты ----------
+@bot.callback_query_handler(func=lambda call: call.data == "cand:accept:12")
+def cb_cand_accept_12(call):
+    bot.answer_callback_query(call.id, "Кандидат #12 принят ✅")
+    bot.edit_message_text(
+        "✅ Кандидат принят\n\n"
+        "Смена #101 «Грузчик на склад Wildberries» · 25.11.2026 · 09:00–18:00\n\n"
+        "Принят: #12 Алексей Demo — 4.9 ★\n"
+        "💰 4500 ₽ · 📍 Автозаводская\n\n"
+        "Исполнителю отправлено уведомление в чат, "
+        "смена появилась в его «Мои отклики».\n\n"
+        "Остался второй кандидат — решение можно принять ниже.",
+        call.message.chat.id,
+        call.message.message_id,
+        reply_markup=candidates_menu(),
+    )
+
+@bot.callback_query_handler(func=lambda call: call.data == "cand:reject:12")
+def cb_cand_reject_12(call):
+    bot.answer_callback_query(call.id, "Кандидат #12 отклонён")
+    bot.edit_message_text(
+        "❌ Отклик отклонён\n\n"
+        "Смена #101 «Грузчик на склад Wildberries» · 25.11.2026\n\n"
+        "Отклонён: #12 Алексей Demo — 4.9 ★\n\n"
+        "Исполнитель получил вежливый отказ и может откликнуться "
+        "на другие смены. Место осталось свободным.\n\n"
+        "Второй кандидат ждёт решения ниже.",
+        call.message.chat.id,
+        call.message.message_id,
+        reply_markup=candidates_menu(),
+    )
+
+@bot.callback_query_handler(func=lambda call: call.data == "cand:accept:13")
+def cb_cand_accept_13(call):
+    bot.answer_callback_query(call.id, "Кандидат #13 принят ✅")
+    bot.edit_message_text(
+        "✅ Кандидат принят\n\n"
+        "Смена #101 «Грузчик на склад Wildberries» · 25.11.2026 · 09:00–18:00\n\n"
+        "Принята: #13 Мария Д. — 4.7 ★\n"
+        "💰 4500 ₽ · 📍 Автозаводская\n\n"
+        "Исполнителю отправлено уведомление в чат. "
+        "Медкнижка у кандидата уже есть — можно выходить на смену.",
+        call.message.chat.id,
+        call.message.message_id,
+        reply_markup=candidates_menu(),
+    )
+
+@bot.callback_query_handler(func=lambda call: call.data == "cand:reject:13")
+def cb_cand_reject_13(call):
+    bot.answer_callback_query(call.id, "Кандидат #13 отклонён")
+    bot.edit_message_text(
+        "❌ Отклик отклонён\n\n"
+        "Смена #101 «Грузчик на склад Wildberries» · 25.11.2026\n\n"
+        "Отклонена: #13 Мария Д. — 4.7 ★\n\n"
+        "Исполнитель получил вежливый отказ, место осталось свободным.\n\n"
+        "Первый кандидат ещё ждёт решения ниже.",
+        call.message.chat.id,
+        call.message.message_id,
+        reply_markup=candidates_menu(),
+    )
+
+# ---------- 12. Главное меню команд Telegram ----------
+bot.set_my_commands([
+    BotCommand("start", "Главное меню"),
+    BotCommand("help", "Справка"),
+    BotCommand("examples", "Примеры работы кнопок"),
+])
